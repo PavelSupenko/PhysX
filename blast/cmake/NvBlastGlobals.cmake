@@ -1,15 +1,15 @@
 set(NV_BLAST_GLOBALS_SOURCE
     ${COMMON_SOURCES}
-    ${PROJECT_SOURCE_DIR}/blast/source/sdk/globals/NvBlastGlobals.cpp
-    ${PROJECT_SOURCE_DIR}/blast/source/sdk/globals/NvBlastInternalProfiler.cpp
+    ${PROJECT_SOURCE_DIR}/source/sdk/globals/NvBlastGlobals.cpp
+    ${PROJECT_SOURCE_DIR}/source/sdk/globals/NvBlastInternalProfiler.cpp
 )
 
 set(NV_BLAST_GLOBALS_INCLUDES
-    ${PROJECT_SOURCE_DIR}/blast/include/shared/NvFoundation
-    ${PROJECT_SOURCE_DIR}/blast/include/lowlevel
-    ${PROJECT_SOURCE_DIR}/blast/include/globals
-    ${PROJECT_SOURCE_DIR}/blast/source/sdk/common
-    ${PROJECT_SOURCE_DIR}/blast/source/shared/NsFoundation/include
+    ${PROJECT_SOURCE_DIR}/include/shared/NvFoundation
+    ${PROJECT_SOURCE_DIR}/include/lowlevel
+    ${PROJECT_SOURCE_DIR}/include/globals
+    ${PROJECT_SOURCE_DIR}/source/sdk/common
+    ${PROJECT_SOURCE_DIR}/source/shared/NsFoundation/include
 )
 
 add_library(NvBlastGlobals ${LIBRARIES_TYPE}

@@ -1,14 +1,14 @@
 set(NV_BLAST_EXT_ASSET_UTILS_SOURCE
     ${COMMON_SOURCES}
-    ${PROJECT_SOURCE_DIR}/blast/source/sdk/extensions/assetutils/NvBlastExtAssetUtils.cpp
+    ${PROJECT_SOURCE_DIR}/source/sdk/extensions/assetutils/NvBlastExtAssetUtils.cpp
 )
 
 set(NV_BLAST_EXT_ASSET_UTILS_INCLUDES
-    ${PROJECT_SOURCE_DIR}/blast/include/shared/NvFoundation
-    ${PROJECT_SOURCE_DIR}/blast/include/lowlevel
-    ${PROJECT_SOURCE_DIR}/blast/include/globals
-    ${PROJECT_SOURCE_DIR}/blast/include/extensions/assetutils
-    ${PROJECT_SOURCE_DIR}/blast/source/sdk/common
+    ${PROJECT_SOURCE_DIR}/include/shared/NvFoundation
+    ${PROJECT_SOURCE_DIR}/include/lowlevel
+    ${PROJECT_SOURCE_DIR}/include/globals
+    ${PROJECT_SOURCE_DIR}/include/extensions/assetutils
+    ${PROJECT_SOURCE_DIR}/source/sdk/common
 )
 
 add_library(NvBlastExtAssetUtils ${LIBRARIES_TYPE}

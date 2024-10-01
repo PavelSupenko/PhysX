@@ -1,17 +1,17 @@
 set(NV_BLAST_SOURCE
     ${COMMON_SOURCES}
-    ${PROJECT_SOURCE_DIR}/blast/source/sdk/lowlevel/NvBlastActor.cpp
-    ${PROJECT_SOURCE_DIR}/blast/source/sdk/lowlevel/NvBlastActorSerializationBlock.cpp
-    ${PROJECT_SOURCE_DIR}/blast/source/sdk/lowlevel/NvBlastAsset.cpp
-    ${PROJECT_SOURCE_DIR}/blast/source/sdk/lowlevel/NvBlastAssetHelper.cpp
-    ${PROJECT_SOURCE_DIR}/blast/source/sdk/lowlevel/NvBlastFamily.cpp
-    ${PROJECT_SOURCE_DIR}/blast/source/sdk/lowlevel/NvBlastFamilyGraph.cpp
+    ${PROJECT_SOURCE_DIR}/source/sdk/lowlevel/NvBlastActor.cpp
+    ${PROJECT_SOURCE_DIR}/source/sdk/lowlevel/NvBlastActorSerializationBlock.cpp
+    ${PROJECT_SOURCE_DIR}/source/sdk/lowlevel/NvBlastAsset.cpp
+    ${PROJECT_SOURCE_DIR}/source/sdk/lowlevel/NvBlastAssetHelper.cpp
+    ${PROJECT_SOURCE_DIR}/source/sdk/lowlevel/NvBlastFamily.cpp
+    ${PROJECT_SOURCE_DIR}/source/sdk/lowlevel/NvBlastFamilyGraph.cpp
 )
 
 set(NV_BLAST_INCLUDES
-    ${PROJECT_SOURCE_DIR}/blast/include/shared/NvFoundation
-    ${PROJECT_SOURCE_DIR}/blast/include/lowlevel
-    ${PROJECT_SOURCE_DIR}/blast/source/sdk/common
+    ${PROJECT_SOURCE_DIR}/include/shared/NvFoundation
+    ${PROJECT_SOURCE_DIR}/include/lowlevel
+    ${PROJECT_SOURCE_DIR}/source/sdk/common
 )
 
 add_library(NvBlast ${LIBRARIES_TYPE}

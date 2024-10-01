@@ -1,22 +1,19 @@
 set(NV_BLAST_EXT_STRESS_SOURCE
     ${COMMON_SOURCES}
-    ${PROJECT_SOURCE_DIR}/blast/source/sdk/extensions/stress/NvBlastExtStressSolver.cpp
-    ${PROJECT_SOURCE_DIR}/blast/source/shared/stress_solver/stress.cpp
+    ${PROJECT_SOURCE_DIR}/source/sdk/extensions/stress/NvBlastExtStressSolver.cpp
+    ${PROJECT_SOURCE_DIR}/source/shared/stress_solver/stress.cpp
 )
 
 set(NV_BLAST_EXT_STRESS_INCLUDES
-    ${PROJECT_SOURCE_DIR}/blast/include
-    ${PROJECT_SOURCE_DIR}/blast/source/sdk/common
-    ${PROJECT_SOURCE_DIR}/blast/include/extensions/stress
-    ${PROJECT_SOURCE_DIR}/blast/source/sdk/extensions/stress
-    ${PROJECT_SOURCE_DIR}/blast/include/lowlevel
-    ${PROJECT_SOURCE_DIR}/blast/include/globals
-    ${PROJECT_SOURCE_DIR}/blast/include/shared/NvFoundation
-    ${PROJECT_SOURCE_DIR}/blast/source/shared/NsFoundation/include
-    ${PROJECT_SOURCE_DIR}/blast/source/shared/stress_solver
-    
-    # include <typeinfo.h> used
-    ${PROJECT_SOURCE_DIR}/blast/_build/host-deps/msvc/VC/Tools/MSVC/14.16.27023/include
+    ${PROJECT_SOURCE_DIR}/include
+    ${PROJECT_SOURCE_DIR}/source/sdk/common
+    ${PROJECT_SOURCE_DIR}/include/extensions/stress
+    ${PROJECT_SOURCE_DIR}/source/sdk/extensions/stress
+    ${PROJECT_SOURCE_DIR}/include/lowlevel
+    ${PROJECT_SOURCE_DIR}/include/globals
+    ${PROJECT_SOURCE_DIR}/include/shared/NvFoundation
+    ${PROJECT_SOURCE_DIR}/source/shared/NsFoundation/include
+    ${PROJECT_SOURCE_DIR}/source/shared/stress_solver
 )
 
 add_library(NvBlastExtStress ${LIBRARIES_TYPE}

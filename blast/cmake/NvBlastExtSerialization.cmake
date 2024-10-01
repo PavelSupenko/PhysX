@@ -1,51 +1,48 @@
 set(NV_BLAST_EXT_SERIALIZATION_SOURCE
     ${COMMON_SOURCES}
-    ${PROJECT_SOURCE_DIR}/blast/_build/host-deps/CapnProto/src/capnp/arena.c++
-    ${PROJECT_SOURCE_DIR}/blast/_build/host-deps/CapnProto/src/capnp/blob.c++
-    ${PROJECT_SOURCE_DIR}/blast/_build/host-deps/CapnProto/src/capnp/layout.c++
-    ${PROJECT_SOURCE_DIR}/blast/_build/host-deps/CapnProto/src/capnp/message.c++
-    ${PROJECT_SOURCE_DIR}/blast/_build/host-deps/CapnProto/src/capnp/serialize.c++
-    ${PROJECT_SOURCE_DIR}/blast/_build/host-deps/CapnProto/src/kj/array.c++
-    ${PROJECT_SOURCE_DIR}/blast/_build/host-deps/CapnProto/src/kj/common.c++
-    ${PROJECT_SOURCE_DIR}/blast/_build/host-deps/CapnProto/src/kj/debug.c++
-    ${PROJECT_SOURCE_DIR}/blast/_build/host-deps/CapnProto/src/kj/exception.c++
-    ${PROJECT_SOURCE_DIR}/blast/_build/host-deps/CapnProto/src/kj/io.c++
-    ${PROJECT_SOURCE_DIR}/blast/_build/host-deps/CapnProto/src/kj/mutex.c++
-    ${PROJECT_SOURCE_DIR}/blast/_build/host-deps/CapnProto/src/kj/string.c++
-    ${PROJECT_SOURCE_DIR}/blast/_build/host-deps/CapnProto/src/kj/units.c++
-    ${PROJECT_SOURCE_DIR}/blast/source/sdk/extensions/serialization/DTO/ActorDTO.cpp
-    ${PROJECT_SOURCE_DIR}/blast/source/sdk/extensions/serialization/DTO/AssetDTO.cpp
-    ${PROJECT_SOURCE_DIR}/blast/source/sdk/extensions/serialization/DTO/FamilyDTO.cpp
-    ${PROJECT_SOURCE_DIR}/blast/source/sdk/extensions/serialization/DTO/FamilyGraphDTO.cpp
-    ${PROJECT_SOURCE_DIR}/blast/source/sdk/extensions/serialization/DTO/NvBlastBondDTO.cpp
-    ${PROJECT_SOURCE_DIR}/blast/source/sdk/extensions/serialization/DTO/NvBlastChunkDTO.cpp
-    ${PROJECT_SOURCE_DIR}/blast/source/sdk/extensions/serialization/DTO/NvBlastIDDTO.cpp
-    ${PROJECT_SOURCE_DIR}/blast/source/sdk/extensions/serialization/NvBlastExtInputStream.cpp
-    ${PROJECT_SOURCE_DIR}/blast/source/sdk/extensions/serialization/NvBlastExtLlSerialization.cpp
-    ${PROJECT_SOURCE_DIR}/blast/source/sdk/extensions/serialization/NvBlastExtOutputStream.cpp
-    ${PROJECT_SOURCE_DIR}/blast/source/sdk/extensions/serialization/NvBlastExtSerialization.cpp
-    ${PROJECT_SOURCE_DIR}/blast/source/sdk/extensions/serialization/generated/NvBlastExtLlSerialization-capn.c++
+    ${PROJECT_SOURCE_DIR}/dependencies/shared/CapnProto/src/capnp/arena.c++
+    ${PROJECT_SOURCE_DIR}/dependencies/shared/CapnProto/src/capnp/blob.c++
+    ${PROJECT_SOURCE_DIR}/dependencies/shared/CapnProto/src/capnp/layout.c++
+    ${PROJECT_SOURCE_DIR}/dependencies/shared/CapnProto/src/capnp/message.c++
+    ${PROJECT_SOURCE_DIR}/dependencies/shared/CapnProto/src/capnp/serialize.c++
+    ${PROJECT_SOURCE_DIR}/dependencies/shared/CapnProto/src/kj/array.c++
+    ${PROJECT_SOURCE_DIR}/dependencies/shared/CapnProto/src/kj/common.c++
+    ${PROJECT_SOURCE_DIR}/dependencies/shared/CapnProto/src/kj/debug.c++
+    ${PROJECT_SOURCE_DIR}/dependencies/shared/CapnProto/src/kj/exception.c++
+    ${PROJECT_SOURCE_DIR}/dependencies/shared/CapnProto/src/kj/io.c++
+    ${PROJECT_SOURCE_DIR}/dependencies/shared/CapnProto/src/kj/mutex.c++
+    ${PROJECT_SOURCE_DIR}/dependencies/shared/CapnProto/src/kj/string.c++
+    ${PROJECT_SOURCE_DIR}/dependencies/shared/CapnProto/src/kj/units.c++
+    ${PROJECT_SOURCE_DIR}/source/sdk/extensions/serialization/DTO/ActorDTO.cpp
+    ${PROJECT_SOURCE_DIR}/source/sdk/extensions/serialization/DTO/AssetDTO.cpp
+    ${PROJECT_SOURCE_DIR}/source/sdk/extensions/serialization/DTO/FamilyDTO.cpp
+    ${PROJECT_SOURCE_DIR}/source/sdk/extensions/serialization/DTO/FamilyGraphDTO.cpp
+    ${PROJECT_SOURCE_DIR}/source/sdk/extensions/serialization/DTO/NvBlastBondDTO.cpp
+    ${PROJECT_SOURCE_DIR}/source/sdk/extensions/serialization/DTO/NvBlastChunkDTO.cpp
+    ${PROJECT_SOURCE_DIR}/source/sdk/extensions/serialization/DTO/NvBlastIDDTO.cpp
+    ${PROJECT_SOURCE_DIR}/source/sdk/extensions/serialization/NvBlastExtInputStream.cpp
+    ${PROJECT_SOURCE_DIR}/source/sdk/extensions/serialization/NvBlastExtLlSerialization.cpp
+    ${PROJECT_SOURCE_DIR}/source/sdk/extensions/serialization/NvBlastExtOutputStream.cpp
+    ${PROJECT_SOURCE_DIR}/source/sdk/extensions/serialization/NvBlastExtSerialization.cpp
+    ${PROJECT_SOURCE_DIR}/source/sdk/extensions/serialization/generated/NvBlastExtLlSerialization-capn.c++
 
 )
 
 set(NV_BLAST_EXT_SERIALIZATION_INCLUDES
-    ${PROJECT_SOURCE_DIR}/blast/include
-    ${PROJECT_SOURCE_DIR}/blast/source/sdk/common
-    ${PROJECT_SOURCE_DIR}/blast/include/extensions/serialization
-    ${PROJECT_SOURCE_DIR}/blast/source/sdk/extensions/serialization
-    ${PROJECT_SOURCE_DIR}/blast/source/sdk/extensions/serialization/DTO
-    ${PROJECT_SOURCE_DIR}/blast/include/lowlevel
-    ${PROJECT_SOURCE_DIR}/blast/source/sdk/lowlevel
-    ${PROJECT_SOURCE_DIR}/blast/include/globals
-    ${PROJECT_SOURCE_DIR}/blast/_build/host-deps/CapnProto/src
-    ${PROJECT_SOURCE_DIR}/blast/source/sdk/extensions/serialization/generated
-    ${PROJECT_SOURCE_DIR}/blast/include/shared/NvFoundation
-    ${PROJECT_SOURCE_DIR}/blast/source/shared/NsFoundation/include
-    ${PROJECT_SOURCE_DIR}/blast/source/shared/NsFileBuffer/include
-    ${PROJECT_SOURCE_DIR}/blast/source/shared/NvTask/include
-
-    # include <typeinfo.h> used
-    ${PROJECT_SOURCE_DIR}/blast/_build/host-deps/msvc/VC/Tools/MSVC/14.16.27023/include
+    ${PROJECT_SOURCE_DIR}/include
+    ${PROJECT_SOURCE_DIR}/source/sdk/common
+    ${PROJECT_SOURCE_DIR}/include/extensions/serialization
+    ${PROJECT_SOURCE_DIR}/source/sdk/extensions/serialization
+    ${PROJECT_SOURCE_DIR}/source/sdk/extensions/serialization/DTO
+    ${PROJECT_SOURCE_DIR}/include/lowlevel
+    ${PROJECT_SOURCE_DIR}/source/sdk/lowlevel
+    ${PROJECT_SOURCE_DIR}/include/globals
+    ${PROJECT_SOURCE_DIR}/dependencies/shared/CapnProto/src
+    ${PROJECT_SOURCE_DIR}/source/sdk/extensions/serialization/generated
+    ${PROJECT_SOURCE_DIR}/include/shared/NvFoundation
+    ${PROJECT_SOURCE_DIR}/source/shared/NsFoundation/include
+    ${PROJECT_SOURCE_DIR}/source/shared/NsFileBuffer/include
+    ${PROJECT_SOURCE_DIR}/source/shared/NvTask/include
 )
 
 add_library(NvBlastExtSerialization ${LIBRARIES_TYPE}
