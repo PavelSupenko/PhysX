@@ -38,9 +38,11 @@ target_link_libraries(NvBlastTk
     NvBlastGlobals
 )
 
-target_link_libraries(NvBlastTk
-    Rpcrt4.Lib
-)
+if (MSVC)
+    target_link_libraries(NvBlastTk
+        Rpcrt4.Lib
+    )
+endif()
 
 if(NV_CONFIGURATION_TYPE STREQUAL DEBUG)
     target_compile_definitions(NvBlastTk PRIVATE 

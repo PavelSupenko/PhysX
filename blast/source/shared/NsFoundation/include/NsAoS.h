@@ -33,7 +33,7 @@
     #include "platform/windows/NsWindowsAoS.h"
 #elif NV_X360
     #include "xbox360/NsXbox360AoS.h"
-#elif (NV_LINUX || NV_ANDROID || NV_APPLE || NV_PS4 || (NV_WINRT && NV_NEON))
+#elif (NV_LINUX || NV_ANDROID || NV_APPLE_FAMILY || NV_PS4 || (NV_WINRT && NV_NEON))
     #include "platform/unix/NsUnixAoS.h"
 #elif NV_PS3
     #include "ps3/NsPS3AoS.h"

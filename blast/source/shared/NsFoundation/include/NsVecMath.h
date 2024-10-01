@@ -63,7 +63,7 @@
 #define VECMATHAOS_ASSERT(x) {}
 #endif
 
-#if COMPILE_VECTOR_INTRINSICS && (NV_X86 || NV_X64) && (NV_LINUX || NV_ANDROID || NV_APPLE || NV_PS4 || (NV_WINRT && NV_NEON))
+#if COMPILE_VECTOR_INTRINSICS && (NV_X86 || NV_X64) && (NV_LINUX || NV_ANDROID || NV_APPLE_FAMILY || NV_PS4 || (NV_WINRT && NV_NEON))
 // only SSE2 compatible platforms should reach this
 #include <xmmintrin.h>
 #endif
