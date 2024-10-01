@@ -33,11 +33,9 @@
 
 #if(NV_WINDOWS_FAMILY || NV_WINRT || NV_X360 || NV_XBOXONE)
 #include <exception>
-#include <typeinfo.h>
 #endif
-#if(NV_APPLE_FAMILY)
+
 #include <typeinfo>
-#endif
 
 #if NV_WIIU
 #pragma ghs nowarning 193 // warning #193-D: zero used for undefined preprocessing identifier
