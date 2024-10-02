@@ -51,7 +51,7 @@
 //TODO: dima: reference all platforms with SIMD support here,
 //all unknown/experimental cases should better default to NO SIMD.
 
-#if NV_X86 || NV_X64 || NV_WINRT || NV_PS3 || NV_X360 || (NV_LINUX && (NV_X86 || NV_X64)) || (NV_ANDROID && NV_NEON) || NV_XBOXONE
+#if NV_X86 || NV_X64 || NV_WINRT || NV_PS3 || NV_X360 || (NV_LINUX && (NV_X86 || NV_X64)) || (NV_ANDROID && NV_NEON) || NV_XBOXONE || (NV_APPLE_FAMILY && NV_NEON)
 #define COMPILE_VECTOR_INTRINSICS 1 // use SIMD         
 #else
 #define COMPILE_VECTOR_INTRINSICS 0 // do not use SIMD
