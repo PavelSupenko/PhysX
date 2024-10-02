@@ -28,6 +28,7 @@
 #define NV_NVFOUNDATION_NVPREPROCESSOR_H
 
 #include <stddef.h>
+#include <TargetConditionals.h>
 
 /** \addtogroup foundation
   @{
@@ -85,9 +86,13 @@ Operating system defines, see http://sourceforge.net/p/predef/wiki/OperatingSyst
 #elif defined(__linux__) // note: __ANDROID__ implies __linux__
 #define NV_LINUX 1
 #elif defined(__APPLE__) && (defined(__arm__) || defined(__arm64__))
-#define NV_IOS 1
+    #if TARGET_OS_IOS
+        #define NV_IOS 1
+    #elif TARGET_OS_MAC
+        #define NV_OSX 1
+    #endif
 #elif defined(__APPLE__)
-#define NV_OSX 1
+    #define NV_OSX 1
 #elif defined(__CELLOS_LV2__)
 #define NV_PS3 1
 #elif defined(__ORBIS__)
