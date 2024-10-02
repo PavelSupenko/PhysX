@@ -36,7 +36,9 @@
  * Currently also used as a template argument to distinguish code paths.  May need a different
  * scheme if two codepaths use the same scalar type.
  */
+#if NV_SSE2
 typedef __m128  SIMD_Scalar;
+#endif
 typedef float   Float_Scalar;
 
 

@@ -81,6 +81,7 @@ struct InertiaMatrixOps
     }
 };
 
+#if NV_SSE2
 template<>
 struct InertiaMatrixOps<SIMD_Scalar>
 {
@@ -114,3 +115,4 @@ struct InertiaMatrixOps<SIMD_Scalar>
         }
     }
 };
+#endif
