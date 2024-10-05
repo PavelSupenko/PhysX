@@ -100,6 +100,21 @@ inline bool os_supports_avx_restore()
     __asm__("xgetbv" : "=a" (xcr0) : "c" (0) : "%edx");
     return (xcr0 & 6) == 6;
 }
+#elif defined(NV_ANDROID) || defined(NV_IOS)
+    #include <stdint.h>
+
+    // On ARM-based platforms like Android and iOS, CPUID is not available.
+    // This function is a no-op and sets all values to zero.
+    inline void cpuid(int cpui[4], int fn) {
+        (void)fn; // Suppress unused parameter warning
+        cpui[0] = cpui[1] = cpui[2] = cpui[3] = 0;
+    }
+
+    // ARM platforms do not support AVX, so this function always returns false.
+    inline bool os_supports_avx_restore() {
+        return false;
+    }
+
 #else
 #include <sys/sysctl.h>
 inline void cpuid(int cpui[4], int fn) {

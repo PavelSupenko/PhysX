@@ -28,7 +28,6 @@
 #define NV_NVFOUNDATION_NVPREPROCESSOR_H
 
 #include <stddef.h>
-#include <TargetConditionals.h>
 
 /** \addtogroup foundation
   @{
@@ -86,6 +85,7 @@ Operating system defines, see http://sourceforge.net/p/predef/wiki/OperatingSyst
 #elif defined(__linux__) // note: __ANDROID__ implies __linux__
 #define NV_LINUX 1
 #elif defined(__APPLE__) && (defined(__arm__) || defined(__arm64__))
+#include <TargetConditionals.h>
     #if TARGET_OS_IOS
         #define NV_IOS 1
     #elif TARGET_OS_MAC
@@ -130,7 +130,7 @@ SIMD defines
 #if defined(__i386__) || defined(_M_IX86) || defined(__x86_64__) || defined(_M_X64)
 #define NV_SSE2 1
 #endif
-#if defined(_M_ARM) || defined(__ARM_NEON__)
+#if defined(_M_ARM) || defined(__ARM_NEON__) || NV_ANDROID
 #define NV_NEON 1
 #endif
 #if defined(_M_PPC) || defined(__CELLOS_LV2__)
@@ -275,7 +275,7 @@ Assert macro
 DLL export macros
 */
 #ifndef NV_C_EXPORT
-#if NV_WINDOWS_FAMILY || NV_LINUX || NV_APPLE_FAMILY
+#if NV_WINDOWS_FAMILY || NV_LINUX || NV_APPLE_FAMILY || NV_ANDROID
 #define NV_C_EXPORT extern "C"
 #else
 #define NV_C_EXPORT
