@@ -4,12 +4,13 @@ project(Blast VERSION 5.0.6)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
-
 set(LIBRARIES_TYPE SHARED)
-set(NV_CONFIGURATION_TYPE RELEASE) # Use DEBUG or RELEASE
 
-## === Common === ##
+message("Libraries configuration type: ${NV_CONFIGURATION_TYPE}")
+message("CMake Android ARM NEON: ${CMAKE_ANDROID_ARM_NEON}")
+message("Android ARM NEON: ${ANDROID_ARM_NEON}")
+
+## === Common sources === ##
 set(COMMON_SOURCES
     ${PROJECT_SOURCE_DIR}/source/sdk/common/NvBlastAssert.cpp
     ${PROJECT_SOURCE_DIR}/source/sdk/common/NvBlastAtomic.cpp
@@ -30,3 +31,23 @@ include(cmake/NvBlastExtTkSerialization.cmake)
 
 ## === UnitTests === ##
 include(cmake/UnitTests.cmake)
+
+## === Compile flags === ##
+
+string(TOLOWER ${NV_CONFIGURATION_TYPE} NV_CONFIGURATION_TYPE)
+
+if(NV_CONFIGURATION_TYPE STREQUAL debug)
+    add_compile_definitions(
+        _CRT_NONSTDC_NO_DEPRECATE
+        BOOST_USE_WINDOWS_H=1
+        _DEBUG
+        CARB_DEBUG=1
+    )
+else()
+    add_compile_definitions( 
+        _CRT_NONSTDC_NO_DEPRECATE
+        BOOST_USE_WINDOWS_H=1
+        NDEBUG
+        CARB_DEBUG=0
+)
+endif()

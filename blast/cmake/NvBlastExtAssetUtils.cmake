@@ -24,20 +24,6 @@ target_link_libraries(NvBlastExtAssetUtils
     NvBlastGlobals
 )
 
-if(NV_CONFIGURATION_TYPE STREQUAL DEBUG)
-    target_compile_definitions(NvBlastExtAssetUtils PRIVATE 
+target_compile_definitions(NvBlastExtAssetUtils PRIVATE 
         LOG_COMPONENT="NvBlastExtAssetUtils"
-        _CRT_NONSTDC_NO_DEPRECATE
-        BOOST_USE_WINDOWS_H=1
-        _DEBUG
-        CARB_DEBUG=1
-    )
-else()
-    target_compile_definitions(NvBlastExtAssetUtils PRIVATE 
-        LOG_COMPONENT="NvBlastExtAssetUtils"
-        _CRT_NONSTDC_NO_DEPRECATE
-        BOOST_USE_WINDOWS_H=1
-        NDEBUG
-        CARB_DEBUG=0
 )
-endif()

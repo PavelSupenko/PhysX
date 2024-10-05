@@ -41,20 +41,7 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
     target_compile_options(NvBlastExtStress PRIVATE -mavx -mfma)
 endif()
 
-if(NV_CONFIGURATION_TYPE STREQUAL DEBUG)
-    target_compile_definitions(NvBlastExtStress PRIVATE 
-        LOG_COMPONENT="NvBlastExtStress"
-        _CRT_NONSTDC_NO_DEPRECATE
-        BOOST_USE_WINDOWS_H=1
-        _DEBUG
-        CARB_DEBUG=1
-    )
-else()
-    target_compile_definitions(NvBlastExtStress PRIVATE 
-        LOG_COMPONENT="NvBlastExtStress"
-        _CRT_NONSTDC_NO_DEPRECATE
-        BOOST_USE_WINDOWS_H=1
-        NDEBUG
-        CARB_DEBUG=0
+
+target_compile_definitions(NvBlastExtStress PRIVATE 
+    LOG_COMPONENT="NvBlastExtStress"
 )
-endif()

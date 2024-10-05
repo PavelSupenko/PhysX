@@ -61,20 +61,6 @@ target_link_libraries(NvBlastExtAuthoring
     NvBlastGlobals
 )
 
-if(NV_CONFIGURATION_TYPE STREQUAL DEBUG)
-    target_compile_definitions(NvBlastExtAuthoring PRIVATE 
+target_compile_definitions(NvBlastExtAuthoring PRIVATE 
         LOG_COMPONENT="NvBlastExtAuthoring"
-        _CRT_NONSTDC_NO_DEPRECATE
-        BOOST_USE_WINDOWS_H=1
-        _DEBUG
-        CARB_DEBUG=1
-    )
-else()
-    target_compile_definitions(NvBlastExtAuthoring PRIVATE 
-        LOG_COMPONENT="NvBlastExtAuthoring"
-        _CRT_NONSTDC_NO_DEPRECATE
-        BOOST_USE_WINDOWS_H=1
-        NDEBUG
-        CARB_DEBUG=0
 )
-endif()

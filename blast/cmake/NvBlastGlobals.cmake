@@ -20,20 +20,6 @@ target_include_directories(NvBlastGlobals PRIVATE
     ${NV_BLAST_GLOBALS_INCLUDES}
 )
 
-if(NV_CONFIGURATION_TYPE STREQUAL DEBUG)
-    target_compile_definitions(NvBlastGlobals PRIVATE 
+target_compile_definitions(NvBlastGlobals PRIVATE 
         LOG_COMPONENT="NvBlastGlobals"
-        _CRT_NONSTDC_NO_DEPRECATE
-        BOOST_USE_WINDOWS_H=1
-        _DEBUG
-        CARB_DEBUG=1
-    )
-else()
-    target_compile_definitions(NvBlastGlobals PRIVATE 
-        LOG_COMPONENT="NvBlastGlobals"
-        _CRT_NONSTDC_NO_DEPRECATE
-        BOOST_USE_WINDOWS_H=1
-        NDEBUG
-        CARB_DEBUG=0
 )
-endif()

@@ -75,20 +75,6 @@ target_link_libraries(UnitTests
 
 include(GoogleTest)
 
-if(NV_CONFIGURATION_TYPE STREQUAL DEBUG)
-    target_compile_definitions(UnitTests PRIVATE 
+target_compile_definitions(UnitTests PRIVATE 
         LOG_COMPONENT="UnitTests"
-        _CRT_NONSTDC_NO_DEPRECATE
-        BOOST_USE_WINDOWS_H=1
-        _DEBUG
-        CARB_DEBUG=1
-    )
-else()
-    target_compile_definitions(UnitTests PRIVATE 
-        LOG_COMPONENT="UnitTests"
-        _CRT_NONSTDC_NO_DEPRECATE
-        BOOST_USE_WINDOWS_H=1
-        NDEBUG
-        CARB_DEBUG=0
 )
-endif()
