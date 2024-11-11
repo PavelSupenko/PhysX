@@ -82,7 +82,7 @@ def get_build_targets(host_os):
         ]
     elif host_os == "Darwin":
         return [
-            "macos-x86",
+            "macos-x86_64",
             "macos-arm64",
             "ios-arm64",
             "android-armv7",
@@ -238,7 +238,7 @@ def main():
     elif target_platform.startswith("macos-"):
         cmake_generator = "Xcode"
         arch = target_platform.split("-")[-1]
-        if arch in ["x86", "arm64"]:
+        if arch in ["x86_64", "arm64"]:
             cmake_flags.append(f"-DCMAKE_OSX_ARCHITECTURES={arch}")
         else:
             print(f"Unsupported macOS architecture: {arch}")
