@@ -25,7 +25,7 @@
 ## Copyright (c) 2008-2022 NVIDIA Corporation. All rights reserved.
 
 
-SET(PHYSX_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fno-rtti -fno-exceptions -ffunction-sections -fdata-sections -ferror-limit=0 -Wall -Wextra -Werror -fstrict-aliasing -Wstrict-aliasing=2 -Weverything -Wno-unknown-warning-option -Wno-documentation-deprecated-sync -Wno-documentation-unknown-command -Wno-float-equal -Wno-padded -Wno-weak-vtables -Wno-cast-align -Wno-conversion -Wno-missing-noreturn -Wno-missing-variable-declarations -Wno-shift-sign-overflow -Wno-covered-switch-default -Wno-exit-time-destructors -Wno-global-constructors -Wno-missing-prototypes -Wno-unreachable-code -Wno-unused-macros -Wno-unused-member-function -Wno-used-but-marked-unused -Wno-weak-template-vtables -Wno-deprecated -Wno-non-virtual-dtor -Wno-invalid-noreturn -Wno-return-type-c-linkage -Wno-reserved-id-macro -Wno-c++98-compat-pedantic -Wno-unused-local-typedef -Wno-old-style-cast -Wno-newline-eof -Wno-unused-private-field -Wno-undefined-reinterpret-cast -Wno-invalid-offsetof -Wno-zero-as-null-pointer-constant -Wno-atomic-implicit-seq-cst -Wno-unused-but-set-variable -Wno-suggest-override -Wno-suggest-destructor-override -Wno-alloca -Wno-switch-enum -Wno-shadow-field -gdwarf-2" CACHE INTERNAL "PhysX CXX")
+SET(PHYSX_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fno-rtti -fno-exceptions -ffunction-sections -fdata-sections -ferror-limit=0 -Wall -Wextra -Werror -fstrict-aliasing -Wstrict-aliasing=2 -Weverything -Wno-unknown-warning-option -Wno-documentation-deprecated-sync -Wno-documentation-unknown-command -Wno-float-equal -Wno-padded -Wno-weak-vtables -Wno-cast-align -Wno-conversion -Wno-missing-noreturn -Wno-missing-variable-declarations -Wno-shift-sign-overflow -Wno-covered-switch-default -Wno-exit-time-destructors -Wno-global-constructors -Wno-missing-prototypes -Wno-unreachable-code -Wno-unused-macros -Wno-unused-member-function -Wno-used-but-marked-unused -Wno-weak-template-vtables -Wno-deprecated -Wno-non-virtual-dtor -Wno-invalid-noreturn -Wno-return-type-c-linkage -Wno-reserved-id-macro -Wno-c++98-compat-pedantic -Wno-unused-local-typedef -Wno-old-style-cast -Wno-newline-eof -Wno-unused-private-field -Wno-undefined-reinterpret-cast -Wno-invalid-offsetof -Wno-zero-as-null-pointer-constant -Wno-atomic-implicit-seq-cst -Wno-unused-but-set-variable -Wno-suggest-override -Wno-suggest-destructor-override -Wno-alloca -Wno-switch-enum -Wno-shadow-field -Wno-inconsistent-missing-override -Wno-inconsistent-missing-destructor-override -Wno-unused-parameter -Wno-undefined-func-template -Wno-unused-function -gdwarf-2" CACHE INTERNAL "PhysX CXX")
 
 SET(CMAKE_SHARED_LINKER_FLAGS_CHECKED "")
 SET(CMAKE_SHARED_LINKER_FLAGS_PROFILE "")
@@ -80,7 +80,6 @@ INCLUDE(PhysXPvdSDK.cmake)
 INCLUDE(PhysXTask.cmake)
 INCLUDE(SceneQuery.cmake)
 INCLUDE(SimulationController.cmake)
-INCLUDE(FastXml.cmake)
 
 # Set folder PhysX SDK to all common SDK source projects
 SET_PROPERTY(TARGET PhysX PROPERTY FOLDER "PhysX SDK")
@@ -95,7 +94,6 @@ SET_PROPERTY(TARGET LowLevelAABB PROPERTY FOLDER "PhysX SDK")
 SET_PROPERTY(TARGET LowLevelDynamics PROPERTY FOLDER "PhysX SDK")
 SET_PROPERTY(TARGET SceneQuery PROPERTY FOLDER "PhysX SDK")
 SET_PROPERTY(TARGET SimulationController PROPERTY FOLDER "PhysX SDK")
-SET_PROPERTY(TARGET FastXml PROPERTY FOLDER "PhysX SDK")
 SET_PROPERTY(TARGET PhysXPvdSDK PROPERTY FOLDER "PhysX SDK")
 SET_PROPERTY(TARGET PhysXTask PROPERTY FOLDER "PhysX SDK")
 SET_PROPERTY(TARGET PhysXFoundation PROPERTY FOLDER "PhysX SDK")
