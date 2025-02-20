@@ -14,7 +14,7 @@ def cmakeExt():
 
 
 def filterPreset(presetName):
-    winPresetFilter = ['win','switch','crosscompile']
+    winPresetFilter = ['win','switch','crosscompile','android']
     if sys.platform == 'win32':
         if any((presetName.find(elem) != -1 and 'windows-crosscompile' not in presetName) for elem in winPresetFilter):
             return True
@@ -101,6 +101,14 @@ class CMakePreset:
                 cmParam = '-D' + cmakeParam.attrib['name'] + '=\"' + \
                     os.environ['PHYSX_ROOT_DIR'] + '/' + \
                     cmakeParam.attrib['value'] + '\"'
+            elif cmakeParam.attrib['name'] == 'ANDROID_ABI':
+                cmParam = '-D' + \
+                    cmakeParam.attrib['name'] + '=\"' + \
+                    cmakeParam.attrib['value'] + '\"'
+                if cmakeParam.attrib['value'].startswith('arm'):
+                    cmParam = cmParam + ' -DPX_OUTPUT_ARCH=arm'
+                elif cmakeParam.attrib['value'].startswith('x86'):
+                    cmParam = cmParam + ' -DPX_OUTPUT_ARCH=x86'
             else:
                 cmParam = '-D' + \
                     cmakeParam.attrib['name'] + '=' + \
@@ -114,6 +122,8 @@ class CMakePreset:
         elif self.targetPlatform == 'linuxAarch64':
             return False
         elif self.compiler == 'x86_64-w64-mingw32-g++':
+            return False
+        elif self.targetPlatform == 'android':
             return False
         return True
 
@@ -165,7 +175,7 @@ class CMakePreset:
         elif self.compiler == 'xcode':
             outString = outString + '-G Xcode'
         # Linux
-        elif self.targetPlatform in ['linux', 'linuxAarch64']:
+        elif self.targetPlatform in ['linux', 'linuxAarch64', 'android']:
             if self.generator is not None and self.generator == 'ninja':
                 outString = outString + '-G \"Ninja\"'
                 outString = outString + ' -DCMAKE_MAKE_PROGRAM=' + os.environ['PM_ninja_PATH'] + '/ninja'
@@ -186,6 +196,22 @@ class CMakePreset:
             outString = outString + ' -DCMAKE_TOOLCHAIN_FILE=' + \
                 cmake_modules_root + '/switch/NX64Toolchain.txt'
             outString = outString + ' -DCMAKE_GENERATOR_PLATFORM=NX64'
+            return outString
+        elif self.targetPlatform == 'android':
+            outString = outString + ' -DTARGET_BUILD_PLATFORM=android'
+            if os.environ.get('ANDROID_NDK_HOME') is None:
+                print('Please provide path to android NDK in environment variable ANDROID_NDK_HOME.')
+                exit(-1)
+            else:
+                outString = outString + ' -DCMAKE_TOOLCHAIN_FILE=' + \
+                    os.environ['ANDROID_NDK_HOME'] + \
+                    '/build/cmake/android.toolchain.cmake'
+                outString = outString + ' -DANDROID_STL=\"c++_static\"'
+                outString = outString + ' -DCM_ANDROID_FP=\"softfp\"'
+                outString = outString + ' -DANDROID_NDK=' + \
+                    os.environ['ANDROID_NDK_HOME']
+                outString = outString + ' -DCMAKE_MAKE_PROGRAM=\"' + \
+                    os.environ['ANDROID_NDK_HOME'] + '\\prebuilt\\windows-x86_64\\bin\\make.exe\"'
             return outString
         elif self.targetPlatform == 'linux':
             outString = outString + ' -DTARGET_BUILD_PLATFORM=linux'
@@ -220,6 +246,18 @@ class CMakePreset:
         elif self.targetPlatform == 'mac64':
             outString = outString + ' -DTARGET_BUILD_PLATFORM=mac'
             outString = outString + ' -DPX_OUTPUT_ARCH=x86'
+            return outString
+        elif self.targetPlatform == 'macArm64':
+            outString = outString + ' -DTARGET_BUILD_PLATFORM=mac'
+            outString = outString + ' -DPX_OUTPUT_ARCH=arm'
+            return outString
+        elif self.targetPlatform == 'ios64':
+            outString = outString + ' -DTARGET_BUILD_PLATFORM=ios'
+            outString = outString + ' -DCMAKE_SYSTEM_NAME=iOS'
+            outString = outString + ' -DCMAKE_SYSTEM_VERSION=1'
+            outString = outString + ' -DCMAKE_OSX_ARCHITECTURES=arm64'
+            outString = outString + ' -DCMAKE_OSX_SYSROOT=iphoneos'
+            outString = outString + ' -DPX_OUTPUT_ARCH=arm'
             return outString
         return ''
 
