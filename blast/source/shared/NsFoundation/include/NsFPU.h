@@ -125,7 +125,7 @@ NV_FOUNDATION_API void disableFPExceptions();
 
 #if NV_WINDOWS_FAMILY || NV_XBOXONE
 #include "platform/windows/NsWindowsFPU.h"
-#elif NV_LINUX || NV_PS4 || NV_OSX
+#elif (NV_X86 || NV_X64) && (NV_LINUX || NV_PS4 || NV_OSX) // NsUnixFPU.h has a arm_neon header but another part of code is not adapted
 #include "platform/unix/NsUnixFPU.h"
 #else
 NV_INLINE nvidia::shdfnd::SIMDGuard::SIMDGuard()

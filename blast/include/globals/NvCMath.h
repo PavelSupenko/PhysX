@@ -32,6 +32,7 @@
 #define NVCMATH_H
 
 #include "NvCTypes.h"
+#include <cmath>
 
 /**
  * Some basic operators for NvcVec2 and NvcVec3

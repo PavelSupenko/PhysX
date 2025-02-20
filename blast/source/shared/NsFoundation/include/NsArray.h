@@ -32,9 +32,9 @@
 #include "NsBasicTemplates.h"
 #include "NvIntrinsics.h"
 
-#if NV_LINUX || NV_ANDROID || (NV_IOS && !NV_A64) || NV_OSX || NV_PS3 || NV_PSP2 || NV_WIIU
+#if NV_LINUX || (NV_IOS && !NV_A64) || NV_PS3 || NV_PSP2 || NV_WIIU
 #include <tr1/type_traits>
-#elif NV_WINRT || NV_XBOXONE || (NV_IOS && NV_A64) || NV_WIN64 || NV_X360 || NV_WIN32 || NV_PS4
+#elif NV_ANDROID || NV_OSX || NV_WINRT || NV_XBOXONE || (NV_IOS && NV_A64) || NV_WIN64 || NV_X360 || NV_WIN32 || NV_PS4
 #include <type_traits>
 #if NV_IOS && NV_A64
 namespace std { namespace tr1 { using std::is_pod; } }
@@ -162,7 +162,7 @@ class Array : protected Alloc
 
     NV_FORCE_INLINE static bool isArrayOfPOD() 
     {
-#if NV_VC>=14
+#if NV_VC>=14 || !NV_VC
         return std::is_trivially_copyable<T>::value;
 #else
         return std::tr1::is_pod<T>::value;

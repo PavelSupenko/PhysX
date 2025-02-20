@@ -149,6 +149,7 @@ struct AngLin6Ops
 };
 
 
+#if NV_SSE2
 /**
  * SIMD AngLin6 operations.
  */
@@ -280,3 +281,4 @@ struct AngLin6Ops<__m128>
         return _mm_add_ps(_ang_sq, _lin_sq);
     }
 };
+#endif

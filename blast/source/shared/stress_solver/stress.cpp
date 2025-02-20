@@ -35,7 +35,11 @@
 
 
 typedef CGNR<AngLin6, AngLin6Ops<Float_Scalar>, BondMatrixS, BondMatrixOpsS<Float_Scalar>, Float_Scalar, AngLin6ErrorSq>    CGNR_SISD;
+#if NV_SSE2
 typedef CGNR<AngLin6, AngLin6Ops<SIMD_Scalar>, BondMatrixS, BondMatrixOpsS<SIMD_Scalar>, SIMD_Scalar, AngLin6ErrorSq>       CGNR_SIMD;
+#else
+typedef CGNR<AngLin6, AngLin6Ops<Float_Scalar>, BondMatrixS, BondMatrixOpsS<Float_Scalar>, Float_Scalar, AngLin6ErrorSq>    CGNR_SIMD;
+#endif
 
 
 /**

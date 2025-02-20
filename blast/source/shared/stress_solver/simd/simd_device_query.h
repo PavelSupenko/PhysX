@@ -91,7 +91,7 @@ constexpr std::pair<const char*, uint32_t> sInstructionSetLookup[] =
 #include <intrin.h> // for __cpuidex
 inline void cpuid(int cpui[4], int fn) { __cpuidex(cpui, fn, 0); }
 inline bool os_supports_avx_restore() { return ((uint32_t)_xgetbv(0) & 6) == 6; }
-#else
+#elif NV_SSE2
 #include <cpuid.h> // for __cpuid_count
 inline void cpuid(int cpui[4], int fn) { __cpuid_count(fn, 0, cpui[0], cpui[1], cpui[2], cpui[3]); }
 inline bool os_supports_avx_restore()
@@ -99,6 +99,31 @@ inline bool os_supports_avx_restore()
     uint32_t xcr0;
     __asm__("xgetbv" : "=a" (xcr0) : "c" (0) : "%edx");
     return (xcr0 & 6) == 6;
+}
+#elif defined(NV_ANDROID) || defined(NV_IOS)
+    #include <stdint.h>
+
+    // On ARM-based platforms like Android and iOS, CPUID is not available.
+    // This function is a no-op and sets all values to zero.
+    inline void cpuid(int cpui[4], int fn) {
+        (void)fn; // Suppress unused parameter warning
+        cpui[0] = cpui[1] = cpui[2] = cpui[3] = 0;
+    }
+
+    // ARM platforms do not support AVX, so this function always returns false.
+    inline bool os_supports_avx_restore() {
+        return false;
+    }
+
+#else
+#include <sys/sysctl.h>
+inline void cpuid(int cpui[4], int fn) {
+    // Apple Silicon doesn't use cpuid, this is a no-op or can be used for other queries
+    cpui[0] = cpui[1] = cpui[2] = cpui[3] = 0; 
+}
+inline bool os_supports_avx_restore() {
+    // Apple Silicon doesn't support AVX, so always return false
+    return false;
 }
 #endif
 
