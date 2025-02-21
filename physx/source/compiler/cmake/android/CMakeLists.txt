@@ -29,7 +29,7 @@
 
 STRING(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_LOWERCASE)
 
-SET(PHYSX_WARNING_DISABLES "-Wno-invalid-offsetof -Wno-invalid-noreturn -Wno-unused-private-field -Wno-deprecated-copy -Wno-unused-variable -Wno-variadic-macros -Wno-array-bounds -Wno-strict-aliasing")
+SET(PHYSX_WARNING_DISABLES "-Wno-invalid-offsetof -Wno-invalid-noreturn -Wno-unused-private-field -Wno-deprecated-copy -Wno-unused-variable -Wno-variadic-macros -Wno-array-bounds -Wno-strict-aliasing -Wno-inconsistent-missing-override -Wno-inconsistent-missing-destructor-override -Wno-unused-parameter -Wno-undefined-func-template -Wno-unused-function")
 
 IF(${ANDROID_ABI} STREQUAL "armeabi-v7a")
 	SET(PHYSX_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall -Wextra -Wpedantic -std=c++11 -fno-rtti -fno-exceptions -ffunction-sections -fdata-sections -funwind-tables -fomit-frame-pointer -funswitch-loops -finline-limit=300 -fno-strict-aliasing -fstack-protector ${PHYSX_WARNING_DISABLES}" CACHE INTERNAL "PhysX CXX")
@@ -102,7 +102,6 @@ INCLUDE(PhysXPvdSDK.cmake)
 INCLUDE(PhysXTask.cmake)
 INCLUDE(SceneQuery.cmake)
 INCLUDE(SimulationController.cmake)
-INCLUDE(FastXml.cmake)
 
 # Set folder PhysX SDK to all common SDK source projects
 SET_PROPERTY(TARGET PhysX PROPERTY FOLDER "PhysX SDK")
@@ -117,7 +116,6 @@ SET_PROPERTY(TARGET LowLevelAABB PROPERTY FOLDER "PhysX SDK")
 SET_PROPERTY(TARGET LowLevelDynamics PROPERTY FOLDER "PhysX SDK")
 SET_PROPERTY(TARGET SceneQuery PROPERTY FOLDER "PhysX SDK")
 SET_PROPERTY(TARGET SimulationController PROPERTY FOLDER "PhysX SDK")
-SET_PROPERTY(TARGET FastXml PROPERTY FOLDER "PhysX SDK")
 SET_PROPERTY(TARGET PhysXPvdSDK PROPERTY FOLDER "PhysX SDK")
 SET_PROPERTY(TARGET PhysXTask PROPERTY FOLDER "PhysX SDK")
 SET_PROPERTY(TARGET PhysXFoundation PROPERTY FOLDER "PhysX SDK")

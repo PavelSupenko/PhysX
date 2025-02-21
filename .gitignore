@@ -1,2 +1,3 @@
-blast/build_artifacts
 .vscode
+blast/build_artifacts
+physx/bin
