@@ -28,6 +28,7 @@ include(cmake/NvBlastExtShaders.cmake)
 include(cmake/NvBlastExtStress.cmake)
 include(cmake/NvBlastTk.cmake)
 include(cmake/NvBlastExtTkSerialization.cmake)
+include(cmake/NvBlastExtPhysX.cmake)
 
 ## === UnitTests === ##
 include(cmake/UnitTests.cmake)
