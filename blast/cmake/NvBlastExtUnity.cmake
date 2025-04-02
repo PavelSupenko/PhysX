@@ -12,6 +12,7 @@ set(NV_BLAST_EXT_UNITY_INCLUDES
     ${PROJECT_SOURCE_DIR}/include/globals
     ${PROJECT_SOURCE_DIR}/include/extensions/assetutils
     ${PROJECT_SOURCE_DIR}/source/sdk/common
+    ${PROJECT_SOURCE_DIR}/dependencies/shared/BoostMultiprecision
 )
 
 add_library(NvBlastExtUnity ${LIBRARIES_TYPE}

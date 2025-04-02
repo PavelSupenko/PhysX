@@ -31,6 +31,8 @@ NV_C_API Fracturer* NvBlastExtUnityCreateIslandsFracturer();
 NV_C_API Fracturer* NvBlastExtUnityCreateVoronoiFracturer(u_int32_t cellsCount);
 NV_C_API Fracturer* NvBlastExtUnityCreateClusteredVoronoiFracturer(uint32_t cellsCount, uint32_t clusterCount, float clusterRad);
 NV_C_API Fracturer* NvBlastExtUnityCreateSlicingFracturer(int32_t x_slices, int32_t y_slices, int32_t z_slices, float angleVariation, float offsetVariation);
+NV_C_API Fracturer* NvBlastExtUnityCreatePlaneCutFracturer(NvcVec3 point, NvcVec3 normal);
+NV_C_API Fracturer* NvBlastExtUnityCreateCutOutFracturer(NvcVec3 point, NvcVec3 normal, uint8_t* bitmap, uint32_t width, uint32_t height);
 
 NV_C_API AuthoringResult* NvBlastExtUnityFractureMesh(Mesh *mesh, uint32_t aggregateMaxCount, Fracturer* fracturer, NvBlastLog logFn);
 NV_C_API AuthoringResult* NvBlastExtUnityFractureMeshes(Mesh **meshes, uint32_t meshesSize, const int32_t *ids, uint32_t aggregateMaxCount, Fracturer* fracturer, NvBlastLog logFn);

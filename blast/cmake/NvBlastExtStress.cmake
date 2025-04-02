@@ -33,9 +33,9 @@ target_link_libraries(NvBlastExtStress
 if (MSVC)
     # For Visual Studio on Windows, enable AVX2 (which includes FMA support)
     target_compile_options(NvBlastExtStress PRIVATE /arch:AVX2)
-elseif(APPLE)
+# elseif(APPLE)
     # For Clang on macOS, enable AVX and FMA
-    target_compile_options(NvBlastExtStress PRIVATE -mavx -mfma)
+    # target_compile_options(NvBlastExtStress PRIVATE -mavx -mfma)
 elseif(CMAKE_COMPILER_IS_GNUCXX)
     # For GCC on other Unix-like systems, enable AVX and FMA
     target_compile_options(NvBlastExtStress PRIVATE -mavx -mfma)

@@ -11,6 +11,8 @@
 #include "IslandsFracturer.h"
 #include "ClusteredVoronoiFracturer.h"
 #include "SlicingFracturer.h"
+#include "PlaneCutFracturer.h"
+#include "CutOutFracturer.h"
 
 #include <sstream>
 
@@ -89,7 +91,6 @@ Fracturer* NvBlastExtUnityCreateClusteredVoronoiFracturer(uint32_t cellsCount, u
 	return new ClusteredVoronoiFracturer(cellsCount, clusterCount, clusterRad);
 }
 
-
 Fracturer* NvBlastExtUnityCreateSlicingFracturer(int32_t x_slices, int32_t y_slices, int32_t z_slices, float angleVariation, float offsetVariation)
 {
 	return new SlicingFracturer(x_slices, y_slices, z_slices, angleVariation, offsetVariation);
@@ -98,6 +99,16 @@ Fracturer* NvBlastExtUnityCreateSlicingFracturer(int32_t x_slices, int32_t y_sli
 Fracturer* NvBlastExtUnityCreateIslandsFracturer()
 {
 	return new IslandsFracturer();
+}
+
+Fracturer* NvBlastExtUnityCreatePlaneCutFracturer(NvcVec3 point, NvcVec3 normal)
+{
+	return new PlaneCutFracturer(point, normal);
+}
+
+Fracturer* NvBlastExtUnityCreateCutOutFracturer(NvcVec3 point, NvcVec3 normal, uint8_t* bitmap, uint32_t width, uint32_t height)
+{
+	return new CutOutFracturer(point, normal, bitmap, width, height);
 }
 
 AuthoringResult* NvBlastExtUnityFractureMesh(Mesh *mesh, uint32_t aggregateMaxCount, Fracturer* fracturer, NvBlastLog logFn)
