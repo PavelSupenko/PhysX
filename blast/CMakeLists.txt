@@ -33,6 +33,9 @@ include(cmake/NvBlastExtUnity.cmake)
 ## === UnitTests === ##
 include(cmake/UnitTests.cmake)
 
+## === TestProgram === ##
+include(cmake/TestProgram.cmake)
+
 ## === Compile flags === ##
 
 string(TOLOWER ${NV_CONFIGURATION_TYPE} NV_CONFIGURATION_TYPE)
