@@ -81,19 +81,19 @@ Mesh* NvBlastExtUnityCleanMesh(Mesh* mesh)
 	return nmesh;
 }
 
-Fracturer* NvBlastExtUnityCreateVoronoiFracturer(u_int32_t cellsCount)
+Fracturer* NvBlastExtUnityCreateVoronoiFracturer(VoronoiConfiguration settings)
 {
-	return new VoronoiFracturer(cellsCount);
+	return new VoronoiFracturer(settings);
 }
 
-Fracturer* NvBlastExtUnityCreateClusteredVoronoiFracturer(uint32_t cellsCount, uint32_t clusterCount, float clusterRad)
+Fracturer* NvBlastExtUnityCreateClusteredVoronoiFracturer(ClusteredVoronoiConfiguration settings)
 {
-	return new ClusteredVoronoiFracturer(cellsCount, clusterCount, clusterRad);
+	return new ClusteredVoronoiFracturer(settings);
 }
 
-Fracturer* NvBlastExtUnityCreateSlicingFracturer(int32_t x_slices, int32_t y_slices, int32_t z_slices, float angleVariation, float offsetVariation)
+Fracturer* NvBlastExtUnityCreateSlicingFracturer(SlicingConfiguration settings)
 {
-	return new SlicingFracturer(x_slices, y_slices, z_slices, angleVariation, offsetVariation);
+	return new SlicingFracturer(settings);
 }
 
 Fracturer* NvBlastExtUnityCreateIslandsFracturer()
@@ -101,14 +101,14 @@ Fracturer* NvBlastExtUnityCreateIslandsFracturer()
 	return new IslandsFracturer();
 }
 
-Fracturer* NvBlastExtUnityCreatePlaneCutFracturer(NvcVec3 point, NvcVec3 normal)
+Fracturer* NvBlastExtUnityCreatePlaneCutFracturer(PlaneCutConfiguration settings)
 {
-	return new PlaneCutFracturer(point, normal);
+	return new PlaneCutFracturer(settings);
 }
 
-Fracturer* NvBlastExtUnityCreateCutOutFracturer(NvcVec3 point, NvcVec3 normal, uint8_t* bitmap, uint32_t width, uint32_t height)
+Fracturer* NvBlastExtUnityCreateCutOutFracturer(CutOutConfiguration settings)
 {
-	return new CutOutFracturer(point, normal, bitmap, width, height);
+	return new CutOutFracturer(settings);
 }
 
 AuthoringResult* NvBlastExtUnityFractureMesh(Mesh *mesh, uint32_t aggregateMaxCount, Fracturer* fracturer, NvBlastLog logFn)
@@ -162,8 +162,8 @@ AuthoringResult* NvBlastExtUnityFractureMeshes(Mesh **meshes, uint32_t meshesSiz
 		}
 	}
 
-	// return nullptr;
 	fTool->setSourceMeshes(meshes, meshesSize, ids);
+	NVBLASTLL_LOG_DEBUG(logFn, "Meshes set into fracture tool");
 
 	for (uint32_t i = 0; i < meshesSize; ++i)
 	{
@@ -182,9 +182,16 @@ AuthoringResult* NvBlastExtUnityFractureMeshes(Mesh **meshes, uint32_t meshesSiz
 			NVBLASTLL_LOG_ERROR(logFn, "Failed to create Voronoi sites generator");
 			return nullptr;
 		}
+		else
+		{
+			NVBLASTLL_LOG_DEBUG(logFn, "Voronoi sites generator created");
+		}
 
 		if (!fracturer->fracture(fTool, voronoiSitesGenerator, &rng, id, logFn))
+		{
 			return nullptr;
+			NVBLASTLL_LOG_ERROR(logFn, "Failed to fracture mesh");
+		}
 	
 		NVBLASTLL_LOG_DEBUG(logFn, "Releasing sites generator and mesh...");
 		voronoiSitesGenerator->release();

@@ -95,13 +95,13 @@ private:
     uint32_t height;
 
 public:
-    CutOutFracturer(NvcVec3 point, NvcVec3 normal, uint8_t* bitmap, uint32_t width, uint32_t height)
+    CutOutFracturer(CutOutConfiguration settings)
     {
-        this->point = point;
-        this->normal = normal;
-        this->bitmap = bitmap;
-        this->width = width;
-        this->height = height;
+        point = settings.point;
+        normal = settings.normal;
+        bitmap = settings.bitmap;
+        width = settings.width;
+        height = settings.height;
     }
 
 public:
@@ -130,11 +130,30 @@ public:
 			q = NvQuat(static_cast<float>(c.x * invs), static_cast<float>(c.y * invs), static_cast<float>(c.z * invs), static_cast<float>(s * 0.5f));
 			q.normalize();
 		}
-		cutoutConfig.transform.q = reinterpret_cast<NvcQuat&>(q);
+
+        NvcQuat quat;
+        quat.x = q.x;
+        quat.y = q.y;
+        quat.z = q.z;
+        quat.w = q.w;
+
+		cutoutConfig.transform.q = quat;
 		cutoutConfig.transform.p = point;
+
+	    std::ostringstream logStream;
+	    logStream << "Transform point: (" << point.x << "," << point.y << "," << point.z << ")\n";
+        logStream << "Transform normal: (" << normal.x << "," << normal.y << "," << normal.z << ")\n";
+        logStream << "Transform quaternion: (" << q.x << "," << q.y << "," << q.z << "," << q.w << ")\n";
+        logStream << "Width: " << width << "\n";
+        logStream << "Height: " << height << "\n";
+	    NVBLASTLL_LOG_DEBUG(logFn, logStream.str().c_str());
+        logStream.clear();
+
 		if (bitmap != nullptr)
 		{
+            NVBLASTLL_LOG_DEBUG(logFn, "Creating cutout set...");    
 			cutoutConfig.cutoutSet = NvBlastExtAuthoringCreateCutoutSet();
+            NVBLASTLL_LOG_DEBUG(logFn, "Building cutout set...");   
 			NvBlastExtAuthoringBuildCutoutSet(*cutoutConfig.cutoutSet, bitmap, width, height, 0.001f, 1.f, false, true);
 		}
 		if (fTool->cutout(0, cutoutConfig, false, rng) != 0)

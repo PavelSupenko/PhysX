@@ -6,14 +6,12 @@ using namespace Nv::Blast;
 class PlaneCutFracturer : public Fracturer
 {
 private:
-    NvcVec3 point;
-    NvcVec3 normal;
+    PlaneCutConfiguration settings;
 
 public:
-    PlaneCutFracturer(NvcVec3 point, NvcVec3 normal)
+    PlaneCutFracturer(PlaneCutConfiguration settings)
     {
-        this->point = point;
-        this->normal = normal;
+        this->settings = settings;
     }
 
 public:
@@ -22,7 +20,7 @@ public:
 		NVBLASTLL_LOG_DEBUG(logFn, "Plane cut fracturing...");
 
 		NoiseConfiguration noise;
-        if (fTool->cut(0, normal, point, noise, false, rng) != 0)
+        if (fTool->cut(0, settings.normal, settings.point, noise, false, rng) != 0)
         {
 			NVBLASTLL_LOG_ERROR(logFn, "Failed to fracture with Cutout (in half-space, plane cut)");
 			return false;
