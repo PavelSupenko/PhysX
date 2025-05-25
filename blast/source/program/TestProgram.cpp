@@ -16,27 +16,40 @@ int main()
     Fracturer* fracturer = createFracturer();
 
     log(0, "Fracturing...", __FILE__, __LINE__);
-    AuthoringResult* result = NvBlastExtUnityFractureMesh(mesh, 1, fracturer, nullptr);
+    AuthoringResult* result = NvBlastExtUnityFractureMesh(mesh, 1, fracturer, log);
 
     log(0, "Fracturing completed", __FILE__, __LINE__);
+
+    int resultChunksCOunt = result->chunkCount;
+    printf("Result chunks count: %d\n", resultChunksCOunt);
+
     return 0;
 }
 
 Fracturer* createFracturer()
 {
-    // VoronoiConfiguration voronoiConfig(100);
+    // VoronoiConfiguration voronoiConfig(5);
     // return NvBlastExtUnityCreateVoronoiFracturer(voronoiConfig);
 
     uint32_t width = 5;
     uint32_t height = 5;
-    uint8_t* bitmap = new uint8_t[width * height];
+    uint32_t bytesCount = width * height * 3;
+    uint8_t* bitmap = new uint8_t[bytesCount];
     for (uint32_t i = 0; i < width; i++)
     for (uint32_t j = 0; j < height; j++)
     {
         if (i == 2 || j == 2)
-            bitmap[i * width + j] = 255;
+        {
+            bitmap[(i * width + j) * 3] = 255;
+            bitmap[(i * width + j) * 3 + 1] = 255;
+            bitmap[(i * width + j) * 3 + 2] = 255;
+        }
         else
-            bitmap[i * width + j] = 0;
+        {
+            bitmap[(i * width + j) * 3] = 0;
+            bitmap[(i * width + j) * 3 + 1] = 0;
+            bitmap[(i * width + j) * 3 + 2] = 0;
+        }
     }
 
     CutOutConfiguration cutOutConfig({0, 0, 0}, {1, 0, 0}, bitmap, width, height);
@@ -71,7 +84,8 @@ Mesh* createMesh()
     };
 
     const uint32_t* triangleIndices = new uint32_t[indicesCount]{
-        0, 2, 3, 0, 3, 1, 8, 4, 5, 8, 5, 9, 10, 6, 7, 10, 7, 11, 12, 13, 14, 12, 14, 15, 16, 17, 18, 16, 18, 19, 20, 21, 22, 20, 22, 23
+        0, 2, 3, 0, 3, 1, 8, 4, 5, 8, 5, 9, 10, 6, 7, 10, 7, 11, 12, 
+        13, 14, 12, 14, 15, 16, 17, 18, 16, 18, 19, 20, 21, 22, 20, 22, 23
     };
 
     Mesh* mesh = NvBlastExtUnityCreateMesh(position, normals, uv, verticesCount, triangleIndices, indicesCount);
