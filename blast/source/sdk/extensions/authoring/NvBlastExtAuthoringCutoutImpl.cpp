@@ -2063,7 +2063,6 @@ void Nv::Blast::createCutoutSet(Nv::Blast::CutoutSetImpl& cutoutSet, const uint8
                     }
                     if (trace->size() < 4)
                     {
-                        trace->~vector<POINT2D>();
                         delete trace;
                         traces.pop_back();
                         traceStarts.pop_back();
@@ -2178,7 +2177,6 @@ void Nv::Blast::createCutoutSet(Nv::Blast::CutoutSetImpl& cutoutSet, const uint8
         {
             for (uint32_t i = 0; i < cutoutCount; ++i)
             {
-                traces[i]->~vector<POINT2D>();
                 delete traces[i];
             }
             cutoutCount = 0;
@@ -2204,7 +2202,6 @@ void Nv::Blast::createCutoutSet(Nv::Blast::CutoutSetImpl& cutoutSet, const uint8
     {
         if (traces[i] != nullptr)
         {
-            traces[i]->~vector<POINT2D>();
             delete traces[i];
         }
     }
