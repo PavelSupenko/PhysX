@@ -44,7 +44,7 @@ public:
     \param[in] mesh Mesh to be cleaned.
     \return Cleaned mesh or nullptr if failed.
     */
-    virtual Mesh* cleanMesh(const Nv::Blast::Mesh* mesh) override;
+    virtual Mesh* cleanMesh(const Nv::Blast::Mesh* mesh, NvBlastLog logFn, NvBlastLogProgress logPrgrsFn, NvBlastLogProgressStart logPrgrsStartFn, NvBlastLogProgressEnd logPrgrsEndFn) override;
     virtual void release() override;
 
     ~MeshCleanerImpl() {};

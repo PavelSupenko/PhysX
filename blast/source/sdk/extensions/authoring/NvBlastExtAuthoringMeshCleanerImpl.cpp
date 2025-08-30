@@ -35,6 +35,7 @@
 #include <NvBlastExtAuthoringMeshImpl.h>
 #include <NvBlastExtAuthoringInternalCommon.h>
 #include <NvBlastNvSharedHelpers.h>
+#include "NvBlastPreprocessorInternal.h" // for log macros
 #include <boost/multiprecision/cpp_int.hpp>
 
 using namespace nvidia;
@@ -1238,11 +1239,13 @@ void getBarycentricCoords(NvVec2& a, NvVec2& b, NvVec2& c, NvVec2& p, float& u, 
 }
 
 
-Mesh* MeshCleanerImpl::cleanMesh(const Mesh* mesh)
+Mesh* MeshCleanerImpl::cleanMesh(const Mesh* mesh, NvBlastLog logFn, NvBlastLogProgress logPrgrsFn, NvBlastLogProgressStart logPrgrsStartFn, NvBlastLogProgressEnd logPrgrsEndFn)
 {
     /**
     ======= Get mesh data ===========
     */
+
+	NVBLASTLL_LOG_PROGRESS_START(logPrgrsStartFn, "Get mesh data");
     std::vector<Vertex> vertices;
     std::vector<Edge> edges;
     std::vector<Facet> facets;
@@ -1272,6 +1275,8 @@ Mesh* MeshCleanerImpl::cleanMesh(const Mesh* mesh)
     /**
         Transform vertices to fit unit cube and snap them to grid.
     **/
+
+	NVBLASTLL_LOG_PROGRESS_START(logPrgrsStartFn, "Transform vertices to fit unit cube and snap them to grid");
     float scale = 1.0f / bnd.getExtents().abs().maxElement();
 
     int32_t gridSize = 10000;  // Grid resolution to which vertices position will be snapped.
@@ -1289,9 +1294,10 @@ Mesh* MeshCleanerImpl::cleanMesh(const Mesh* mesh)
     std::vector<NvVec3> facetsNormals(facets.size());
     std::vector<NvBounds3> facetBound(facets.size());
 
-
     for (uint32_t tr1 = 0; tr1 < facets.size(); ++tr1)
     {
+        NVBLASTLL_LOG_PROGRESS(logPrgrsFn, float(tr1) / float(facets.size()));
+
         if (facets[tr1].edgesCount != 3)
         {
             return nullptr;
@@ -1317,8 +1323,13 @@ Mesh* MeshCleanerImpl::cleanMesh(const Mesh* mesh)
     /**
         Build intersections between all pairs of triangles.
     */
+
+	NVBLASTLL_LOG_PROGRESS_START(logPrgrsStartFn, "Build intersections between all pairs of triangles");
+
     for (uint32_t tr1 = 0; tr1 < facets.size(); ++tr1)
     {
+        NVBLASTLL_LOG_PROGRESS(logPrgrsFn, float(tr1) / float(facets.size()));
+
         if (triangleStencil[tr1].empty())
             continue;
         for (uint32_t tr2 = tr1 + 1; tr2 < facets.size(); ++tr2)
@@ -1335,8 +1346,13 @@ Mesh* MeshCleanerImpl::cleanMesh(const Mesh* mesh)
     /**
     Reintersect all segments
     */
+
+	NVBLASTLL_LOG_PROGRESS_START(logPrgrsStartFn, "Reintersect all segments");
+
     for (uint32_t tr = 0; tr < triangleStencil.size(); ++tr)
     {
+        NVBLASTLL_LOG_PROGRESS(logPrgrsFn, float(tr) / float(triangleStencil.size()));
+
         std::vector<RVec3>& ctr = triangleStencil[tr];
         std::vector<std::vector<cpp_rational> > perSegmentInters(ctr.size() / 2);
         for (uint32_t sg1 = 6; sg1 < ctr.size(); sg1 += 2)
@@ -1389,6 +1405,8 @@ Mesh* MeshCleanerImpl::cleanMesh(const Mesh* mesh)
         std::map<RVec3, uint32_t, RVec3Comparer> mapping;
         for (uint32_t tr1 = 0; tr1 < triangleStencil.size(); ++tr1)
         {
+            NVBLASTLL_LOG_PROGRESS(logPrgrsFn, float(tr1) / float(triangleStencil.size()));
+
             for (uint32_t j = 0; j < triangleStencil[tr1].size(); j += 2)
             {
 
@@ -1444,9 +1462,13 @@ Mesh* MeshCleanerImpl::cleanMesh(const Mesh* mesh)
     /**
         Build constrained DT
     */
+
+	NVBLASTLL_LOG_PROGRESS_START(logPrgrsStartFn, "Build constrained DT");
+
     std::vector<DelTriangle> trs;
     for (uint32_t i = 0; i < tsten.size(); ++i)
     {
+        NVBLASTLL_LOG_PROGRESS(logPrgrsFn, float(i) / float(tsten.size()));
 
         if (tsten[i].size() < 3)
             continue;
@@ -1469,6 +1491,9 @@ Mesh* MeshCleanerImpl::cleanMesh(const Mesh* mesh)
     /**
         Remove 'deleted' triangles from array.
     */
+
+	NVBLASTLL_LOG_PROGRESS_START(logPrgrsStartFn, "Remove 'deleted' triangles from array");
+
     {
         std::vector<DelTriangle> trstemp;
         trstemp.reserve(trs.size());
@@ -1483,6 +1508,9 @@ Mesh* MeshCleanerImpl::cleanMesh(const Mesh* mesh)
     /**
         Filter exterior surface
     */
+
+	NVBLASTLL_LOG_PROGRESS_START(logPrgrsStartFn, "Filter exterior surface");
+
     std::vector<bool> fillingMask(trs.size(), false);
 
     std::map<std::pair<int32_t, int32_t>, int32_t> edgeMap;
@@ -1490,6 +1518,8 @@ Mesh* MeshCleanerImpl::cleanMesh(const Mesh* mesh)
 
     for (uint32_t i = 0; i < trs.size(); ++i)
     {
+        NVBLASTLL_LOG_PROGRESS(logPrgrsFn, float(i) / float(trs.size()));
+
         if (trs[i].p[0] == -1)
             continue;
         if (trs[i].p[0] == trs[i].p[1] || trs[i].p[2] == trs[i].p[1] || trs[i].p[2] == trs[i].p[0])
@@ -1545,6 +1575,8 @@ Mesh* MeshCleanerImpl::cleanMesh(const Mesh* mesh)
     int32_t best = 0;
     for (uint32_t i = 0; i < trs.size(); ++i)
     {
+        NVBLASTLL_LOG_PROGRESS(logPrgrsFn, float(i) / float(trs.size()));
+
         if (trs[i].p[0] == -1)
             continue;
         float m = std::max(
@@ -1562,8 +1594,12 @@ Mesh* MeshCleanerImpl::cleanMesh(const Mesh* mesh)
         trque.push(best);
     }
 
+    int initialTrqueSize = trque.size();
+
     while (!trque.empty())
     {
+        NVBLASTLL_LOG_PROGRESS(logPrgrsFn, float(trque.size()) / float(initialTrqueSize));
+
         int32_t trid      = trque.front();
         fillingMask[trid] = true;
         DelTriangle& tr   = trs[trque.front()];
@@ -1647,6 +1683,9 @@ Mesh* MeshCleanerImpl::cleanMesh(const Mesh* mesh)
     /**
         Rescale mesh to initial coordinates.
     */
+
+	NVBLASTLL_LOG_PROGRESS_START(logPrgrsStartFn, "Rescale mesh to initial coordinates");
+
     for (uint32_t i = 0; i < finalPoints.size(); ++i)
     {
         newVertices[i] = newVertices[i] * (1.0f / scale) + bnd.minimum;
@@ -1674,6 +1713,8 @@ Mesh* MeshCleanerImpl::cleanMesh(const Mesh* mesh)
 
         for (uint32_t i = 0; i < trs.size(); ++i)
         {
+            NVBLASTLL_LOG_PROGRESS(logPrgrsFn, float(i) / float(trs.size()));
+
             if (trs[i].p[0] == -1)
                 continue;
             int32_t id             = 0;
@@ -1701,6 +1742,9 @@ Mesh* MeshCleanerImpl::cleanMesh(const Mesh* mesh)
     /**
         Reuse old buffers to create Mesh
     */
+   
+    NVBLASTLL_LOG_PROGRESS_START(logPrgrsStartFn, "Reuse old buffers to create Mesh");
+
     std::vector<NvcVec3> newMeshVertices(result.size() * 3);
     std::vector<NvcVec3> newMeshNormals(result.size() * 3);
     std::vector<NvcVec2> newMeshUvs(result.size() * 3);
@@ -1711,6 +1755,8 @@ Mesh* MeshCleanerImpl::cleanMesh(const Mesh* mesh)
 
     for (uint32_t i = 0; i < result.size(); ++i)
     {
+        NVBLASTLL_LOG_PROGRESS(logPrgrsFn, float(i) / float(result.size()));
+
         Vertex* arr[3] = { &result[i].a, &result[i].b, &result[i].c };
         for (uint32_t k = 0; k < 3; ++k)
         {
@@ -1724,6 +1770,8 @@ Mesh* MeshCleanerImpl::cleanMesh(const Mesh* mesh)
     int32_t cindex = 0;
     for (uint32_t i = 0; i < result.size(); ++i)
     {
+        NVBLASTLL_LOG_PROGRESS(logPrgrsFn, float(i) / float(result.size()));
+
         newMaterialIds[i]     = result[i].materialId;
         newSmoothingGroups[i] = result[i].smoothingGroup;
 
@@ -1736,6 +1784,8 @@ Mesh* MeshCleanerImpl::cleanMesh(const Mesh* mesh)
                                    static_cast<uint32_t>(serializedIndices.size()));
     rMesh->setMaterialId(newMaterialIds.data());
     rMesh->setSmoothingGroup(newSmoothingGroups.data());
+
+    NVBLASTLL_LOG_PROGRESS_END(logPrgrsEndFn);
     return rMesh;
 }
 

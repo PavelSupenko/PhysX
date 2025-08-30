@@ -65,6 +65,13 @@ Blast will use it to report errors, warnings, and other information.
 */
 typedef void(*NvBlastLog)(int type, const char* msg, const char* file, int line);
 
+/**
+Function pointer types for logging time consiming operations progress start, end and progress.
+*/
+typedef void(*NvBlastLogProgress)(float progress);
+typedef void(*NvBlastLogProgressStart)(const char* msg);
+typedef void(*NvBlastLogProgressEnd)();
+
 
 /**
 ID used to identify assets.

@@ -16,7 +16,9 @@ using namespace Nv::Blast;
 // Mesh operations
 NV_C_API Mesh* NvBlastExtUnityCreateMesh(const NvcVec3* position, const NvcVec3* normals, const NvcVec2* uv, uint32_t verticesCount, const uint32_t* triangleIndices, uint32_t indicesCount);
 NV_C_API void NvBlastExtUnityReleaseMesh(Mesh* mesh);
-NV_C_API Mesh* NvBlastExtUnityCleanMesh(Mesh* mesh);
+NV_C_API Mesh* NvBlastExtUnityCleanMesh(Mesh* mesh, NvBlastLog logFn, NvBlastLogProgress logPrgrsFn, NvBlastLogProgressStart logPrgrsStartFn, NvBlastLogProgressEnd logPrgrsEndFn);
+
+NV_C_API void NvBlastExtUnitySetMaterialId(Mesh* mesh, const int32_t *materialIds);
 
 NV_C_API uint32_t NvBlastExtUnityGetVerticesCount(const Mesh* mesh);
 NV_C_API const Vertex* NvBlastExtUnityGetVertices(const Mesh* mesh);

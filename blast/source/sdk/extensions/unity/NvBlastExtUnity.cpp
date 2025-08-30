@@ -18,7 +18,8 @@
 
 using namespace Nv::Blast;
 
-Mesh* NvBlastExtUnityCreateMesh(const NvcVec3* position, const NvcVec3* normals, const NvcVec2* uv, uint32_t verticesCount, const uint32_t* triangleIndices, uint32_t indicesCount)
+Mesh* NvBlastExtUnityCreateMesh(const NvcVec3* position, const NvcVec3* normals, const NvcVec2* uv, uint32_t verticesCount, 
+	const uint32_t* triangleIndices, uint32_t indicesCount)
 {
 	Mesh* mesh = NvBlastExtAuthoringCreateMesh(position, normals, uv, verticesCount, triangleIndices, indicesCount);
 	return mesh;
@@ -69,11 +70,11 @@ const Edge* NvBlastExtUnityGetEdges(const Mesh* mesh)
 	return mesh->getEdges();
 }
 
-Mesh* NvBlastExtUnityCleanMesh(Mesh* mesh)
+Mesh* NvBlastExtUnityCleanMesh(Mesh* mesh, NvBlastLog logFn, NvBlastLogProgress logPrgrsFn, NvBlastLogProgressStart logPrgrsStartFn, NvBlastLogProgressEnd logPrgrsEndFn)
 {
     MeshCleaner* clr = NvBlastExtAuthoringCreateMeshCleaner();
 	Mesh* nmesh;
-	nmesh = clr->cleanMesh(mesh);
+	nmesh = clr->cleanMesh(mesh, logFn, logPrgrsFn, logPrgrsStartFn, logPrgrsEndFn);
 	clr->release();
 
 	// Original mesh disposing
@@ -223,67 +224,70 @@ uint32_t NvBlastExtUnityGetFractureChunksCount(const AuthoringResult& aResult)
 
 Mesh** NvBlastExtUnityCreateMeshes(const AuthoringResult& aResult)
 {
-    // Проверка корректности входных данных
+	// Check if the result contains valid data
     if (aResult.chunkCount == 0)
         return nullptr;
 	
-    // Количество создаваемых мешей равно количеству чанков
+	// The count of meshes to create is equal to the number of chunks
     uint32_t meshCount = aResult.chunkCount;
     Mesh** meshes = new Mesh*[meshCount];
 
-    // Для каждого чанка создаём отдельный Mesh
+	// Create Mesh for each chunk in the result
     for (uint32_t i = 0; i < meshCount; ++i)
     {
-        // Каждый чанк описывается диапазоном треугольников:
+		// Each chunk in the result corresponds to a range of triangles in the geometry array,
         // [geometryOffset[i], geometryOffset[i+1])
         uint32_t start = aResult.geometryOffset[i];
         uint32_t end   = aResult.geometryOffset[i + 1];
         uint32_t triangleCount = end - start;
-        uint32_t vertexCount   = triangleCount * 3; // 3 вершины на треугольник
+        uint32_t vertexCount   = triangleCount * 3; // 3 vertices per triangle
 
-        // Выделяем временные массивы для вершин, нормалей, UV и индексов
+		// Allocating arrays for positions, normals, uvs, indices and materials
         NvcVec3* positions = new NvcVec3[vertexCount];
         NvcVec3* normals   = new NvcVec3[vertexCount];
         NvcVec2* uvs       = new NvcVec2[vertexCount];
         uint32_t* indices  = new uint32_t[vertexCount];
+        int32_t* materials  = new int32_t[triangleCount];
 
-        // Заполняем массивы данными из треугольников чанка
-        uint32_t v = 0;
+		// Fill the arrays with triangle data
         for (uint32_t t = 0; t < triangleCount; ++t)
         {
             const Triangle& tri = aResult.geometry[start + t];
+
+			uint32_t aIndex = t * 3;
+			uint32_t bIndex = t * 3 + 1;
+			uint32_t cIndex = t * 3 + 2;
             
-            // Вершина A
-            positions[v] = tri.a.p;
-            normals[v]   = tri.a.n;
-            uvs[v]       = tri.a.uv[0];
-            indices[v]   = v;
-            ++v;
+            positions	[aIndex] = 	tri.a.p;
+            normals		[aIndex] = 	tri.a.n;
+            uvs			[aIndex] =	tri.a.uv[0];
+            indices		[aIndex] = 	aIndex;
             
-            // Вершина B
-            positions[v] = tri.b.p;
-            normals[v]   = tri.b.n;
-            uvs[v]       = tri.b.uv[0];
-            indices[v]   = v;
-            ++v;
-            
-            // Вершина C
-            positions[v] = tri.c.p;
-            normals[v]   = tri.c.n;
-            uvs[v]       = tri.c.uv[0];
-            indices[v]   = v;
-            ++v;
+            positions	[bIndex] = 	tri.b.p;
+            normals		[bIndex] = 	tri.b.n;
+            uvs			[bIndex] =	tri.b.uv[0];
+            indices		[bIndex] = 	bIndex;
+
+            positions	[cIndex] = 	tri.c.p;
+            normals		[cIndex] = 	tri.c.n;
+            uvs			[cIndex] =	tri.c.uv[0];
+            indices		[cIndex] = 	cIndex;
+
+			materials[t] = tri.materialId;
         }
 
-        // Создаём Mesh с помощью предоставленной API-функции
+		// Create a new mesh using the NvBlastExtAuthoringCreateMesh function
         Mesh* mesh = NvBlastExtAuthoringCreateMesh(positions, normals, uvs, vertexCount, indices, vertexCount);
+		// Mesh* mesh = new MeshImpl(positions, normals, uvs, vertexCount, indices, vertexCount);
         meshes[i] = mesh;
+		mesh->setMaterialId(materials);
 
-        // Освобождаем временные массивы, так как API, как правило, копирует данные
+		// Free the temporary arrays
         delete[] positions;
         delete[] normals;
         delete[] uvs;
         delete[] indices;
+		delete[] materials;
     }
 
     return meshes;
