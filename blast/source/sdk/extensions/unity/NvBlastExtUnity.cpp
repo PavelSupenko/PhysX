@@ -112,21 +112,32 @@ Fracturer* NvBlastExtUnityCreateCutOutFracturer(CutOutConfiguration settings)
 	return new CutOutFracturer(settings);
 }
 
-AuthoringResult* NvBlastExtUnityFractureMesh(Mesh *mesh, uint32_t aggregateMaxCount, Fracturer* fracturer, NvBlastLog logFn)
+void NvBlastExtUnityReleaseAuthoringResult(ConvexMeshBuilder& collisionBuilder, AuthoringResult* ar)
+{
+	NvBlastExtAuthoringReleaseAuthoringResult(collisionBuilder, ar);
+}
+
+ConvexMeshBuilder* NvBlastExtUnityCreateCollisionBuilder()
+{
+	ConvexMeshBuilder* collisionBuilder = new BoundingBoxConvexMeshBuilder();
+	return collisionBuilder;
+}
+
+AuthoringResult* NvBlastExtUnityFractureMesh(Mesh *mesh, uint32_t aggregateMaxCount, Fracturer* fracturer, ConvexMeshBuilder* collisionBuilder,NvBlastLog logFn)
 {
 	Mesh* meshes[] = { mesh };
 	int32_t ids[] = { 0 };
-	return NvBlastExtUnityFractureMeshes(meshes, 1, ids, aggregateMaxCount, fracturer, logFn);
+	return NvBlastExtUnityFractureMeshes(meshes, 1, ids, aggregateMaxCount, fracturer, collisionBuilder, logFn);
 }
 
-AuthoringResult* NvBlastExtUnityFractureMeshes(Mesh **meshes, uint32_t meshesSize, const int32_t *ids, uint32_t aggregateMaxCount, Fracturer* fracturer, NvBlastLog logFn)
+AuthoringResult* NvBlastExtUnityFractureMeshes(Mesh **meshes, uint32_t meshesSize, const int32_t *ids, uint32_t aggregateMaxCount, 
+	Fracturer* fracturer, ConvexMeshBuilder* collisionBuilder, NvBlastLog logFn)
 {
 	std::ostringstream oss;
 	oss << "Fracturing " << meshesSize << " meshes...";
 	NVBLASTLL_LOG_DEBUG(logFn, oss.str().c_str());
 
 	FractureTool* fTool = NvBlastExtAuthoringCreateFractureTool();
-	ConvexMeshBuilder* collisionBuilder = new BoundingBoxConvexMeshBuilder();
 	BlastBondGenerator* bondGenerator = NvBlastExtAuthoringCreateBondGenerator(collisionBuilder);
 
 	ConvexDecompositionParams collisionParameter;
@@ -203,14 +214,8 @@ AuthoringResult* NvBlastExtUnityFractureMeshes(Mesh **meshes, uint32_t meshesSiz
 	AuthoringResult* result = NvBlastExtAuthoringProcessFracture(*fTool, *bondGenerator, *collisionBuilder, collisionParameter);
 
 	bondGenerator->release();
-	collisionBuilder->release();
+	// collisionBuilder->release();
 	fTool->release();
-
-	// bool fbxCollision = false; // Add collision geometry to FBX file
-	// if (!fbxCollision)
-	// {
-	// 	NvBlastExtAuthoringReleaseAuthoringResultCollision(*collisionBuilder, result);
-	// }
 
 	NVBLASTLL_LOG_DEBUG(logFn, "Success");
 	return result;

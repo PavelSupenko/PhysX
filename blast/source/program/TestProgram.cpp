@@ -16,7 +16,8 @@ int main()
     Fracturer* fracturer = createFracturer();
 
     log(0, "Fracturing...", __FILE__, __LINE__);
-    AuthoringResult* result = NvBlastExtUnityFractureMesh(mesh, 1, fracturer, log);
+    ConvexMeshBuilder* collisionBuilder = NvBlastExtUnityCreateCollisionBuilder();
+    AuthoringResult* result = NvBlastExtUnityFractureMesh(mesh, 1, fracturer, collisionBuilder, log);
 
     log(0, "Fracturing completed", __FILE__, __LINE__);
 

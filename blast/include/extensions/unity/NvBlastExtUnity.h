@@ -37,8 +37,11 @@ NV_C_API Fracturer* NvBlastExtUnityCreateSlicingFracturer(SlicingConfiguration s
 NV_C_API Fracturer* NvBlastExtUnityCreatePlaneCutFracturer(PlaneCutConfiguration settings);
 NV_C_API Fracturer* NvBlastExtUnityCreateCutOutFracturer(CutOutConfiguration settings);
 
-NV_C_API AuthoringResult* NvBlastExtUnityFractureMesh(Mesh *mesh, uint32_t aggregateMaxCount, Fracturer* fracturer, NvBlastLog logFn);
-NV_C_API AuthoringResult* NvBlastExtUnityFractureMeshes(Mesh **meshes, uint32_t meshesSize, const int32_t *ids, uint32_t aggregateMaxCount, Fracturer* fracturer, NvBlastLog logFn);
+NV_C_API void NvBlastExtUnityReleaseAuthoringResult(ConvexMeshBuilder& collisionBuilder, AuthoringResult* ar);
+NV_C_API ConvexMeshBuilder* NvBlastExtUnityCreateCollisionBuilder();
+
+NV_C_API AuthoringResult* NvBlastExtUnityFractureMesh(Mesh *mesh, uint32_t aggregateMaxCount, Fracturer* fracturer, ConvexMeshBuilder* collisionBuilder, NvBlastLog logFn);
+NV_C_API AuthoringResult* NvBlastExtUnityFractureMeshes(Mesh **meshes, uint32_t meshesSize, const int32_t *ids, uint32_t aggregateMaxCount, Fracturer* fracturer, ConvexMeshBuilder* collisionBuilder, NvBlastLog logFn);
 NV_C_API uint32_t NvBlastExtUnityGetFractureChunksCount(const AuthoringResult& aResult);
 NV_C_API Mesh** NvBlastExtUnityCreateMeshes(const AuthoringResult& aResult);
 
