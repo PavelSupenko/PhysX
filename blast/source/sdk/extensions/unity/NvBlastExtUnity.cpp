@@ -207,7 +207,7 @@ AuthoringResult* NvBlastExtUnityFractureMeshes(Mesh **meshes, uint32_t meshesSiz
 	
 		NVBLASTLL_LOG_DEBUG(logFn, "Releasing sites generator and mesh...");
 		voronoiSitesGenerator->release();
-		mesh->release();
+		// mesh->release();
 	}
 
 	NVBLASTLL_LOG_DEBUG(logFn, "Fracturing...");
