@@ -1,3 +1,17 @@
+# Fork Description
+The main idea of this fork is to provide cross platform PhysX support to use it in different game engines (e.g. Unity or Unreal Engine).
+For this purpose two things are done here:
+- Blast library (destruction toolkit) was modified to support all the range of modern platforms and it was unchained from the Nvidia build system (packman) and transferred fully to the CMake and simple cross-platform python build script that just wraps CMake arguments processing.
+- `develop` branch was merged with the community for of PhysX provided by O3DE (check description in section below) to make PhysX components to be supported across different platforms, not only Windows.
+
+## Blast
+To build blast go to the `blast` subdirectory and check the [Readme file](blast/README.md).
+
+## PhysX
+Go to the section below and check the O3DE fork documentation on how to build.
+
+Below you can check the original PhysX readme.
+
 # NVIDIA PhysX
 
 Copyright (c) 2008-2025 NVIDIA Corporation. All rights reserved.
