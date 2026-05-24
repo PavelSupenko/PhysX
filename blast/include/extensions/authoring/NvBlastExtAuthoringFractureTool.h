@@ -336,7 +336,7 @@ class FractureTool
         Each mesh will be assigned to a chunk with ID given by the corresponding element in ids.
         If the corresponding element is negative, or ids is NULL, then the chunk will be assigned
         an arbitrary (but currently unused) ID.
-        Returns true iff all meshes were assigned chunks with valid IDs.
+        Returns true if all meshes were assigned chunks with valid IDs.
     */
     virtual bool setSourceMeshes(Mesh const * const * meshes, uint32_t meshesSize, const int32_t* ids = nullptr) = 0;
 

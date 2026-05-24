@@ -1,3 +1,7 @@
-.vscode
+.idea/*
+.vscode/*
 blast/build_artifacts
 physx/bin
+
+!.vscode/tasks.json
+!.vscode/launch.json

@@ -40,6 +40,9 @@ Macros for more convenient logging
 #define NVBLASTLL_LOG_INFO(_logFn, _msg)        if (_logFn != nullptr) { _logFn(NvBlastMessage::Info, _msg, __FILE__, __LINE__); } ((void)0)
 #define NVBLASTLL_LOG_DEBUG(_logFn, _msg)       if (_logFn != nullptr) { _logFn(NvBlastMessage::Debug, _msg, __FILE__, __LINE__); } ((void)0)
 
+#define NVBLASTLL_LOG_PROGRESS(_logFn, _prgrs)       if (_logFn != nullptr) { _logFn(_prgrs); } ((void)0)
+#define NVBLASTLL_LOG_PROGRESS_START(_logFn, _msg)       if (_logFn != nullptr) { _logFn(_msg); } ((void)0)
+#define NVBLASTLL_LOG_PROGRESS_END(_logFn)       if (_logFn != nullptr) { _logFn(); } ((void)0)
 
 /** Blast will check function parameters for debug and checked builds. */
 #define NVBLASTLL_CHECK_PARAMS (NV_DEBUG || NV_CHECKED)

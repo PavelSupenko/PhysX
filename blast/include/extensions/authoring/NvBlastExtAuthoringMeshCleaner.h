@@ -61,7 +61,7 @@ public:
         \param[in] mesh Mesh to be cleaned.
         \return Cleaned mesh or nullptr if failed.
     */
-    virtual Mesh* cleanMesh(const Mesh* mesh) = 0;
+    virtual Mesh* cleanMesh(const Mesh* mesh, NvBlastLog logFn, NvBlastLogProgress logPrgrsFn, NvBlastLogProgressStart logPrgrsStartFn, NvBlastLogProgressEnd logPrgrsEndFn) = 0;
 
     virtual void release() = 0;
 };
