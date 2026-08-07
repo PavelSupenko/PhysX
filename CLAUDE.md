@@ -18,6 +18,8 @@ A fork of NVIDIA PhysX (merged with the O3DE community fork for Mac/iOS/Android 
 
 Native libraries are built in `PhysX/blast/`, then **copied by hand** into `blast-unity/Packages/com.pavlo-supenko.unity-blaster/Plugins/<platform>/`. There is no automated deployment step. Each `.dylib`/`.so` needs a Unity `.meta` PluginImporter file with the right platform enabled — copy the settings from a sibling library rather than letting Unity regenerate them.
 
+Copy the libraries, not the build directory. `macos-arm64/` had picked up CMake's generated `Makefile` along with the `UnitTests` and `TestProgram` executables — 1.5 MB of build output that Unity imported and shipped as part of the package.
+
 Check what you built before shipping it: `lipo -info` for the architecture and `vtool -show-build` for the platform and deployment target. The `ios-arm64` slot held a **macOS** dylib for a long time without anyone noticing, because nothing in the copy step distinguishes them. The iOS build also needs its deployment target set explicitly — CMake otherwise pins `minos` to the SDK version and the plugin silently stops loading on anything older:
 
 ```bash
