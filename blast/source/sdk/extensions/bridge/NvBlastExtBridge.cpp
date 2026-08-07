@@ -2,7 +2,7 @@
 #include "NvBlastExtAuthoringFractureTool.h"
 #include "NvBlastExtAuthoringBondGenerator.h"
 #include "NvBlastExtAuthoring.h"
-#include "NvBlastExtUnity.h"
+#include "NvBlastExtBridge.h"
 #include "NvBlastPreprocessorInternal.h"
 #include "ConvexHullMeshBuilder.h"
 #include "NvBlastExtSerialization.h"
@@ -13,62 +13,62 @@ using namespace Nv::Blast;
 
 // ─── Mesh creation and release ────────────────────────────────────────────────
 
-Mesh* NvBlastExtUnityCreateMesh(const NvcVec3* position, const NvcVec3* normals, const NvcVec2* uv,
+Mesh* NvBlastExtBridgeCreateMesh(const NvcVec3* position, const NvcVec3* normals, const NvcVec2* uv,
     uint32_t verticesCount, const uint32_t* triangleIndices, uint32_t indicesCount)
 {
     return NvBlastExtAuthoringCreateMesh(position, normals, uv, verticesCount, triangleIndices, indicesCount);
 }
 
-void NvBlastExtUnityReleaseMesh(Mesh* mesh)
+void NvBlastExtBridgeReleaseMesh(Mesh* mesh)
 {
     if (mesh) mesh->release();
 }
 
-void NvBlastExtUnitySetMaterialId(Mesh* mesh, const int32_t* materialIds)
+void NvBlastExtBridgeSetMaterialId(Mesh* mesh, const int32_t* materialIds)
 {
     mesh->setMaterialId(materialIds);
 }
 
-void NvBlastExtUnitySetSmoothingGroup(Mesh* mesh, const int32_t* smoothingGroups)
+void NvBlastExtBridgeSetSmoothingGroup(Mesh* mesh, const int32_t* smoothingGroups)
 {
     mesh->setSmoothingGroup(smoothingGroups);
 }
 
 // ─── Mesh data accessors ──────────────────────────────────────────────────────
 
-uint32_t NvBlastExtUnityGetVerticesCount(const Mesh* mesh)
+uint32_t NvBlastExtBridgeGetVerticesCount(const Mesh* mesh)
 {
     return mesh->getVerticesCount();
 }
 
-const Vertex* NvBlastExtUnityGetVertices(const Mesh* mesh)
+const Vertex* NvBlastExtBridgeGetVertices(const Mesh* mesh)
 {
     return mesh->getVertices();
 }
 
-uint32_t NvBlastExtUnityGetFacetCount(const Mesh* mesh)
+uint32_t NvBlastExtBridgeGetFacetCount(const Mesh* mesh)
 {
     return mesh->getFacetCount();
 }
 
-const Facet* NvBlastExtUnityGetFacets(const Mesh* mesh)
+const Facet* NvBlastExtBridgeGetFacets(const Mesh* mesh)
 {
     return mesh->getFacetsBuffer();
 }
 
-uint32_t NvBlastExtUnityGetEdgesCount(const Mesh* mesh)
+uint32_t NvBlastExtBridgeGetEdgesCount(const Mesh* mesh)
 {
     return mesh->getEdgesCount();
 }
 
-const Edge* NvBlastExtUnityGetEdges(const Mesh* mesh)
+const Edge* NvBlastExtBridgeGetEdges(const Mesh* mesh)
 {
     return mesh->getEdges();
 }
 
 // ─── Mesh cleaning ────────────────────────────────────────────────────────────
 
-Mesh* NvBlastExtUnityCleanMesh(Mesh* mesh,
+Mesh* NvBlastExtBridgeCleanMesh(Mesh* mesh,
     NvBlastLog logFn, NvBlastLogProgress logPrgrsFn,
     NvBlastLogProgressStart logPrgrsStartFn, NvBlastLogProgressEnd logPrgrsEndFn)
 {
@@ -85,12 +85,12 @@ Mesh* NvBlastExtUnityCleanMesh(Mesh* mesh,
 
 // ─── Collision builder ────────────────────────────────────────────────────────
 
-ConvexMeshBuilder* NvBlastExtUnityCreateCollisionBuilder()
+ConvexMeshBuilder* NvBlastExtBridgeCreateCollisionBuilder()
 {
     return new ConvexHullMeshBuilder();
 }
 
-void NvBlastExtUnityReleaseCollisionBuilder(ConvexMeshBuilder* builder)
+void NvBlastExtBridgeReleaseCollisionBuilder(ConvexMeshBuilder* builder)
 {
     if (builder) builder->release();
 }
@@ -134,7 +134,7 @@ ExtSerialization& serializationManager()
 
 }  // namespace
 
-uint32_t NvBlastExtUnitySerializeAsset(const NvBlastAsset* asset, void** outBuffer)
+uint32_t NvBlastExtBridgeSerializeAsset(const NvBlastAsset* asset, void** outBuffer)
 {
     if (asset == nullptr || outBuffer == nullptr)
     {
@@ -155,7 +155,7 @@ uint32_t NvBlastExtUnitySerializeAsset(const NvBlastAsset* asset, void** outBuff
     return static_cast<uint32_t>(size);
 }
 
-void NvBlastExtUnityReleaseSerializedAsset(void* buffer)
+void NvBlastExtBridgeReleaseSerializedAsset(void* buffer)
 {
     if (buffer != nullptr)
     {
@@ -163,7 +163,7 @@ void NvBlastExtUnityReleaseSerializedAsset(void* buffer)
     }
 }
 
-NvBlastAsset* NvBlastExtUnityDeserializeAsset(const void* buffer, uint32_t size)
+NvBlastAsset* NvBlastExtBridgeDeserializeAsset(const void* buffer, uint32_t size)
 {
     if (buffer == nullptr || size == 0)
     {
@@ -173,7 +173,7 @@ NvBlastAsset* NvBlastExtUnityDeserializeAsset(const void* buffer, uint32_t size)
     return reinterpret_cast<NvBlastAsset*>(serializationManager().deserializeFromBuffer(buffer, size));
 }
 
-void NvBlastExtUnityReleaseAsset(NvBlastAsset* asset)
+void NvBlastExtBridgeReleaseAsset(NvBlastAsset* asset)
 {
     if (asset != nullptr)
     {
@@ -181,19 +181,19 @@ void NvBlastExtUnityReleaseAsset(NvBlastAsset* asset)
     }
 }
 
-const NvBlastAsset* NvBlastExtUnityGetAsset(const AuthoringResult& aResult)
+const NvBlastAsset* NvBlastExtBridgeGetAsset(const AuthoringResult& aResult)
 {
     return aResult.asset;
 }
 
 // ─── Authoring result helpers ─────────────────────────────────────────────────
 
-uint32_t NvBlastExtUnityGetFractureChunksCount(const AuthoringResult& aResult)
+uint32_t NvBlastExtBridgeGetFractureChunksCount(const AuthoringResult& aResult)
 {
     return aResult.chunkCount;
 }
 
-Mesh** NvBlastExtUnityCreateMeshes(const AuthoringResult& aResult)
+Mesh** NvBlastExtBridgeCreateMeshes(const AuthoringResult& aResult)
 {
     if (aResult.chunkCount == 0) return nullptr;
 
@@ -242,14 +242,14 @@ Mesh** NvBlastExtUnityCreateMeshes(const AuthoringResult& aResult)
     return meshes;
 }
 
-void NvBlastExtUnityReleaseMeshesArray(Mesh** meshes)
+void NvBlastExtBridgeReleaseMeshesArray(Mesh** meshes)
 {
     // Releases only the pointer array itself.
-    // Each individual Mesh* must already have been released via NvBlastExtUnityReleaseMesh.
+    // Each individual Mesh* must already have been released via NvBlastExtBridgeReleaseMesh.
     delete[] meshes;
 }
 
-void NvBlastExtUnityReleaseAuthoringResult(ConvexMeshBuilder& collisionBuilder, AuthoringResult* ar)
+void NvBlastExtBridgeReleaseAuthoringResult(ConvexMeshBuilder& collisionBuilder, AuthoringResult* ar)
 {
     NvBlastExtAuthoringReleaseAuthoringResult(collisionBuilder, ar);
 }

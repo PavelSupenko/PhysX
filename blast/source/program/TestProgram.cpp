@@ -1,14 +1,14 @@
-// Scratch harness for driving the Unity bridge without launching an editor: it builds a hardcoded
+// Scratch harness for driving the bridge without launching an editor: it builds a hardcoded
 // cube, fractures it through the session C-API and reports the chunk count. Edit fracture() to
 // select the operation under test.
 
 #include <iostream>
-#include <NvBlastExtUnity.h>
-#include <NvBlastExtUnitySession.h>
-#include <NvBlastExtUnityConfigs.h>
+#include <NvBlastExtBridge.h>
+#include <NvBlastExtBridgeSession.h>
+#include <NvBlastExtBridgeConfigs.h>
 
 Mesh* createMesh();
-int32_t fracture(NvBlastExtUnityFractureSession* session, int32_t chunkId);
+int32_t fracture(NvBlastExtBridgeFractureSession* session, int32_t chunkId);
 void log(int type, const char* msg, const char* file, int line);
 
 int main()
@@ -17,25 +17,25 @@ int main()
     Mesh* mesh = createMesh();
 
     log(0, "Creating session...", __FILE__, __LINE__);
-    NvBlastExtUnityFractureSession* session = NvBlastExtUnitySessionCreate(log);
+    NvBlastExtBridgeFractureSession* session = NvBlastExtBridgeSessionCreate(log);
 
     const int32_t rootId = 0;
-    if (NvBlastExtUnitySessionSetSourceMeshes(session, &mesh, 1, &rootId) != NvBlastExtUnitySessionResult_Success)
+    if (NvBlastExtBridgeSessionSetSourceMeshes(session, &mesh, 1, &rootId) != NvBlastExtBridgeSessionResult_Success)
     {
         log(0, "Failed to set the source mesh", __FILE__, __LINE__);
         return 1;
     }
 
     log(0, "Fracturing...", __FILE__, __LINE__);
-    if (fracture(session, rootId) != NvBlastExtUnitySessionResult_Success)
+    if (fracture(session, rootId) != NvBlastExtBridgeSessionResult_Success)
     {
         log(0, "Fracture failed", __FILE__, __LINE__);
         return 1;
     }
 
     log(0, "Finalizing...", __FILE__, __LINE__);
-    ConvexMeshBuilder* collisionBuilder = NvBlastExtUnityCreateCollisionBuilder();
-    AuthoringResult*   result           = NvBlastExtUnitySessionFinalize(session, collisionBuilder, 1, -1);
+    ConvexMeshBuilder* collisionBuilder = NvBlastExtBridgeCreateCollisionBuilder();
+    AuthoringResult*   result           = NvBlastExtBridgeSessionFinalize(session, collisionBuilder, 1, -1);
 
     if (result == nullptr)
     {
@@ -45,19 +45,19 @@ int main()
 
     printf("Result chunks count: %d\n", result->chunkCount);
 
-    NvBlastExtUnityReleaseAuthoringResult(*collisionBuilder, result);
-    NvBlastExtUnityReleaseCollisionBuilder(collisionBuilder);
-    NvBlastExtUnitySessionRelease(session);
-    NvBlastExtUnityReleaseMesh(mesh);
+    NvBlastExtBridgeReleaseAuthoringResult(*collisionBuilder, result);
+    NvBlastExtBridgeReleaseCollisionBuilder(collisionBuilder);
+    NvBlastExtBridgeSessionRelease(session);
+    NvBlastExtBridgeReleaseMesh(mesh);
 
     return 0;
 }
 
 // Swap the body for whichever operation is being debugged.
-int32_t fracture(NvBlastExtUnityFractureSession* session, int32_t chunkId)
+int32_t fracture(NvBlastExtBridgeFractureSession* session, int32_t chunkId)
 {
     // VoronoiConfiguration voronoiConfig(5);
-    // return NvBlastExtUnitySessionFractureVoronoi(session, chunkId, voronoiConfig, 0);
+    // return NvBlastExtBridgeSessionFractureVoronoi(session, chunkId, voronoiConfig, 0);
 
     const uint32_t width      = 5;
     const uint32_t height     = 5;
@@ -73,7 +73,7 @@ int32_t fracture(NvBlastExtUnityFractureSession* session, int32_t chunkId)
         bitmap[(i * width + j) * 3 + 2] = value;
     }
 
-    NvBlastExtUnityCutoutConfiguration config;
+    NvBlastExtBridgeCutoutConfiguration config;
     config.point                      = { 0, 0, 0 };
     config.normal                     = { 1, 0, 0 };
     config.bitmap                     = bitmap;
@@ -89,7 +89,7 @@ int32_t fracture(NvBlastExtUnityFractureSession* session, int32_t chunkId)
     config.expandGaps                 = 1;
     config.noise                      = NoiseConfiguration();
 
-    const int32_t result = NvBlastExtUnitySessionFractureCutout(session, chunkId, &config, 0);
+    const int32_t result = NvBlastExtBridgeSessionFractureCutout(session, chunkId, &config, 0);
     delete[] bitmap;
     return result;
 }
@@ -127,7 +127,7 @@ Mesh* createMesh()
         14, 12, 14, 15, 16, 17, 18, 16, 18, 19, 20, 21, 22, 20, 22, 23
     };
 
-    Mesh* mesh = NvBlastExtUnityCreateMesh(position, normals, uv, verticesCount, triangleIndices, indicesCount);
+    Mesh* mesh = NvBlastExtBridgeCreateMesh(position, normals, uv, verticesCount, triangleIndices, indicesCount);
     return mesh;
 }
 

@@ -1,10 +1,10 @@
-// Tests for the PhysX-free convex hull builder behind NvBlastExtUnityCreateCollisionBuilder.
+// Tests for the PhysX-free convex hull builder behind NvBlastExtBridgeCreateCollisionBuilder.
 //
 // Exercised through the public C API rather than the class, since that is what the fracture
 // pipeline and the engine integrations actually call.
 
-#include "NvBlastExtUnity.h"
-#include "NvBlastExtUnitySession.h"
+#include "NvBlastExtBridge.h"
+#include "NvBlastExtBridgeSession.h"
 #include "NvBlastExtAuthoringConvexMeshBuilder.h"
 
 #include <gtest/gtest.h>
@@ -51,7 +51,7 @@ class ConvexHullTest : public ::testing::Test
 protected:
     void SetUp() override
     {
-        m_builder = NvBlastExtUnityCreateCollisionBuilder();
+        m_builder = NvBlastExtBridgeCreateCollisionBuilder();
         ASSERT_NE(m_builder, nullptr);
     }
 
@@ -62,7 +62,7 @@ protected:
             m_builder->releaseCollisionHull(m_hull);
             m_hull = nullptr;
         }
-        NvBlastExtUnityReleaseCollisionBuilder(m_builder);
+        NvBlastExtBridgeReleaseCollisionBuilder(m_builder);
     }
 
     CollisionHull* build(const std::vector<NvcVec3>& points)
@@ -264,22 +264,22 @@ TEST_F(ConvexHullTest, FracturedChunksGetHullsThatAreNotAllBoxes)
                                    10, 6,  7,  10, 7,  11, 12, 13, 14, 12, 14, 15,
                                    16, 17, 18, 16, 18, 19, 20, 21, 22, 20, 22, 23 };
 
-    Mesh* mesh = NvBlastExtUnityCreateMesh(positions, normals, uvs, verticesCount, indices, 36);
+    Mesh* mesh = NvBlastExtBridgeCreateMesh(positions, normals, uvs, verticesCount, indices, 36);
     ASSERT_NE(mesh, nullptr);
 
-    NvBlastExtUnityFractureSession* session = NvBlastExtUnitySessionCreate(nullptr);
+    NvBlastExtBridgeFractureSession* session = NvBlastExtBridgeSessionCreate(nullptr);
     ASSERT_NE(session, nullptr);
 
     const int32_t rootId = 0;
-    ASSERT_EQ(NvBlastExtUnitySessionSetSourceMeshes(session, &mesh, 1, &rootId),
-              NvBlastExtUnitySessionResult_Success);
+    ASSERT_EQ(NvBlastExtBridgeSessionSetSourceMeshes(session, &mesh, 1, &rootId),
+              NvBlastExtBridgeSessionResult_Success);
 
     VoronoiConfiguration config(8);
-    ASSERT_EQ(NvBlastExtUnitySessionFractureVoronoi(session, rootId, config, 0),
-              NvBlastExtUnitySessionResult_Success);
+    ASSERT_EQ(NvBlastExtBridgeSessionFractureVoronoi(session, rootId, config, 0),
+              NvBlastExtBridgeSessionResult_Success);
 
-    ConvexMeshBuilder* builder = NvBlastExtUnityCreateCollisionBuilder();
-    AuthoringResult*   result  = NvBlastExtUnitySessionFinalize(session, builder, 1, -1);
+    ConvexMeshBuilder* builder = NvBlastExtBridgeCreateCollisionBuilder();
+    AuthoringResult*   result  = NvBlastExtBridgeSessionFinalize(session, builder, 1, -1);
 
     ASSERT_NE(result, nullptr);
     ASSERT_GT(result->chunkCount, 1u);
@@ -306,10 +306,10 @@ TEST_F(ConvexHullTest, FracturedChunksGetHullsThatAreNotAllBoxes)
 
     EXPECT_GT(nonBoxHulls, 0u) << "every chunk came back as a box — hulls are not being built";
 
-    NvBlastExtUnityReleaseAuthoringResult(*builder, result);
-    NvBlastExtUnityReleaseCollisionBuilder(builder);
-    NvBlastExtUnitySessionRelease(session);
-    NvBlastExtUnityReleaseMesh(mesh);
+    NvBlastExtBridgeReleaseAuthoringResult(*builder, result);
+    NvBlastExtBridgeReleaseCollisionBuilder(builder);
+    NvBlastExtBridgeSessionRelease(session);
+    NvBlastExtBridgeReleaseMesh(mesh);
 }
 
 }  // namespace

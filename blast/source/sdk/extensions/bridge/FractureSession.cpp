@@ -79,12 +79,12 @@ int32_t FractureSession::setSourceMeshes(Mesh** meshes, uint32_t meshCount, cons
 {
     if (mTool == nullptr)
     {
-        return NvBlastExtUnitySessionResult_InvalidSession;
+        return NvBlastExtBridgeSessionResult_InvalidSession;
     }
     if (meshes == nullptr || meshCount == 0)
     {
         NVBLASTLL_LOG_ERROR(mLogFn, "SetSourceMeshes: no meshes supplied");
-        return NvBlastExtUnitySessionResult_InvalidArgument;
+        return NvBlastExtBridgeSessionResult_InvalidArgument;
     }
 
     for (uint32_t i = 0; i < meshCount; ++i)
@@ -94,7 +94,7 @@ int32_t FractureSession::setSourceMeshes(Mesh** meshes, uint32_t meshCount, cons
             std::ostringstream oss;
             oss << "SetSourceMeshes: mesh " << i << " is null";
             NVBLASTLL_LOG_ERROR(mLogFn, oss.str().c_str());
-            return NvBlastExtUnitySessionResult_InvalidArgument;
+            return NvBlastExtBridgeSessionResult_InvalidArgument;
         }
     }
 
@@ -102,10 +102,10 @@ int32_t FractureSession::setSourceMeshes(Mesh** meshes, uint32_t meshCount, cons
     if (!mTool->setSourceMeshes(meshes, meshCount, ids))
     {
         NVBLASTLL_LOG_ERROR(mLogFn, "SetSourceMeshes: the fracture tool rejected the meshes");
-        return NvBlastExtUnitySessionResult_InvalidArgument;
+        return NvBlastExtBridgeSessionResult_InvalidArgument;
     }
 
-    return NvBlastExtUnitySessionResult_Success;
+    return NvBlastExtBridgeSessionResult_Success;
 }
 
 void FractureSession::reset()
@@ -158,12 +158,12 @@ int32_t FractureSession::validateTarget(int32_t chunkId, bool replaceChunk) cons
 {
     if (mTool == nullptr)
     {
-        return NvBlastExtUnitySessionResult_InvalidSession;
+        return NvBlastExtBridgeSessionResult_InvalidSession;
     }
     if (mTool->getChunkCount() == 0)
     {
         NVBLASTLL_LOG_ERROR(mLogFn, "Fracture: no source meshes have been set");
-        return NvBlastExtUnitySessionResult_NoSourceMesh;
+        return NvBlastExtBridgeSessionResult_NoSourceMesh;
     }
 
     const int32_t infoIndex = mTool->getChunkInfoIndex(chunkId);
@@ -172,7 +172,7 @@ int32_t FractureSession::validateTarget(int32_t chunkId, bool replaceChunk) cons
         std::ostringstream oss;
         oss << "Fracture: no chunk with ID " << chunkId;
         NVBLASTLL_LOG_ERROR(mLogFn, oss.str().c_str());
-        return NvBlastExtUnitySessionResult_InvalidChunk;
+        return NvBlastExtBridgeSessionResult_InvalidChunk;
     }
 
     // Checking for a missing parent rather than for ID 0 catches every source mesh, not just the
@@ -182,10 +182,10 @@ int32_t FractureSession::validateTarget(int32_t chunkId, bool replaceChunk) cons
         std::ostringstream oss;
         oss << "Fracture: chunk " << chunkId << " is a source mesh and cannot be replaced";
         NVBLASTLL_LOG_ERROR(mLogFn, oss.str().c_str());
-        return NvBlastExtUnitySessionResult_InvalidArgument;
+        return NvBlastExtBridgeSessionResult_InvalidArgument;
     }
 
-    return NvBlastExtUnitySessionResult_Success;
+    return NvBlastExtBridgeSessionResult_Success;
 }
 
 bool FractureSession::createSitesGenerator(int32_t chunkId, VoronoiSitesGenerator*& outGenerator, Mesh*& outMesh)
@@ -226,16 +226,16 @@ int32_t FractureSession::applyVoronoiSites(int32_t chunkId, const NvcVec3* sites
     if (sites == nullptr || siteCount < 2)
     {
         NVBLASTLL_LOG_ERROR(mLogFn, "Fracture: voronoi fracturing needs at least 2 sites");
-        return NvBlastExtUnitySessionResult_InvalidArgument;
+        return NvBlastExtBridgeSessionResult_InvalidArgument;
     }
 
     if (mTool->voronoiFracturing(static_cast<uint32_t>(chunkId), siteCount, sites, replaceChunk) != 0)
     {
         NVBLASTLL_LOG_ERROR(mLogFn, "Fracture: voronoi fracturing failed");
-        return NvBlastExtUnitySessionResult_FractureFailed;
+        return NvBlastExtBridgeSessionResult_FractureFailed;
     }
 
-    return NvBlastExtUnitySessionResult_Success;
+    return NvBlastExtBridgeSessionResult_Success;
 }
 
 // ─── Fracture operations ──────────────────────────────────────────────────────
@@ -243,7 +243,7 @@ int32_t FractureSession::applyVoronoiSites(int32_t chunkId, const NvcVec3* sites
 int32_t FractureSession::fractureVoronoi(int32_t chunkId, const VoronoiConfiguration& config, bool replaceChunk)
 {
     const int32_t validation = validateTarget(chunkId, replaceChunk);
-    if (validation != NvBlastExtUnitySessionResult_Success)
+    if (validation != NvBlastExtBridgeSessionResult_Success)
     {
         return validation;
     }
@@ -254,7 +254,7 @@ int32_t FractureSession::fractureVoronoi(int32_t chunkId, const VoronoiConfigura
     Mesh*                  chunkMesh = nullptr;
     if (!createSitesGenerator(chunkId, generator, chunkMesh))
     {
-        return NvBlastExtUnitySessionResult_FractureFailed;
+        return NvBlastExtBridgeSessionResult_FractureFailed;
     }
 
     generator->uniformlyGenerateSitesInMesh(config.cellsCount);
@@ -272,7 +272,7 @@ int32_t FractureSession::fractureClusteredVoronoi(int32_t chunkId, const Cluster
                                                   bool replaceChunk)
 {
     const int32_t validation = validateTarget(chunkId, replaceChunk);
-    if (validation != NvBlastExtUnitySessionResult_Success)
+    if (validation != NvBlastExtBridgeSessionResult_Success)
     {
         return validation;
     }
@@ -283,7 +283,7 @@ int32_t FractureSession::fractureClusteredVoronoi(int32_t chunkId, const Cluster
     Mesh*                  chunkMesh = nullptr;
     if (!createSitesGenerator(chunkId, generator, chunkMesh))
     {
-        return NvBlastExtUnitySessionResult_FractureFailed;
+        return NvBlastExtBridgeSessionResult_FractureFailed;
     }
 
     // clusteredSitesGeneration takes (clusterCount, sitesPerCluster, radius) in that order.
@@ -302,7 +302,7 @@ int32_t FractureSession::fractureVoronoiInSphere(int32_t chunkId, uint32_t cellC
                                                  const NvcVec3& center, bool replaceChunk)
 {
     const int32_t validation = validateTarget(chunkId, replaceChunk);
-    if (validation != NvBlastExtUnitySessionResult_Success)
+    if (validation != NvBlastExtBridgeSessionResult_Success)
     {
         return validation;
     }
@@ -313,7 +313,7 @@ int32_t FractureSession::fractureVoronoiInSphere(int32_t chunkId, uint32_t cellC
     Mesh*                  chunkMesh = nullptr;
     if (!createSitesGenerator(chunkId, generator, chunkMesh))
     {
-        return NvBlastExtUnitySessionResult_FractureFailed;
+        return NvBlastExtBridgeSessionResult_FractureFailed;
     }
 
     generator->generateInSphere(cellCount, radius, center);
@@ -331,7 +331,7 @@ int32_t FractureSession::fractureVoronoiWithSites(int32_t chunkId, const NvcVec3
                                                   bool replaceChunk)
 {
     const int32_t validation = validateTarget(chunkId, replaceChunk);
-    if (validation != NvBlastExtUnitySessionResult_Success)
+    if (validation != NvBlastExtBridgeSessionResult_Success)
     {
         return validation;
     }
@@ -343,7 +343,7 @@ int32_t FractureSession::fractureVoronoiWithSites(int32_t chunkId, const NvcVec3
 int32_t FractureSession::fractureSlicing(int32_t chunkId, const SlicingConfiguration& config, bool replaceChunk)
 {
     const int32_t validation = validateTarget(chunkId, replaceChunk);
-    if (validation != NvBlastExtUnitySessionResult_Success)
+    if (validation != NvBlastExtBridgeSessionResult_Success)
     {
         return validation;
     }
@@ -353,17 +353,17 @@ int32_t FractureSession::fractureSlicing(int32_t chunkId, const SlicingConfigura
     if (mTool->slicing(static_cast<uint32_t>(chunkId), config, replaceChunk, &mRng) != 0)
     {
         NVBLASTLL_LOG_ERROR(mLogFn, "Fracture: slicing failed");
-        return NvBlastExtUnitySessionResult_FractureFailed;
+        return NvBlastExtBridgeSessionResult_FractureFailed;
     }
 
-    return NvBlastExtUnitySessionResult_Success;
+    return NvBlastExtBridgeSessionResult_Success;
 }
 
 int32_t FractureSession::fractureCut(int32_t chunkId, const NvcVec3& normal, const NvcVec3& point,
                                      const NoiseConfiguration& noise, bool replaceChunk)
 {
     const int32_t validation = validateTarget(chunkId, replaceChunk);
-    if (validation != NvBlastExtUnitySessionResult_Success)
+    if (validation != NvBlastExtBridgeSessionResult_Success)
     {
         return validation;
     }
@@ -373,17 +373,17 @@ int32_t FractureSession::fractureCut(int32_t chunkId, const NvcVec3& normal, con
     if (mTool->cut(static_cast<uint32_t>(chunkId), normal, point, noise, replaceChunk, &mRng) != 0)
     {
         NVBLASTLL_LOG_ERROR(mLogFn, "Fracture: plane cut failed");
-        return NvBlastExtUnitySessionResult_FractureFailed;
+        return NvBlastExtBridgeSessionResult_FractureFailed;
     }
 
-    return NvBlastExtUnitySessionResult_Success;
+    return NvBlastExtBridgeSessionResult_Success;
 }
 
-int32_t FractureSession::fractureCutout(int32_t chunkId, const NvBlastExtUnityCutoutConfiguration& config,
+int32_t FractureSession::fractureCutout(int32_t chunkId, const NvBlastExtBridgeCutoutConfiguration& config,
                                         bool replaceChunk)
 {
     const int32_t validation = validateTarget(chunkId, replaceChunk);
-    if (validation != NvBlastExtUnitySessionResult_Success)
+    if (validation != NvBlastExtBridgeSessionResult_Success)
     {
         return validation;
     }
@@ -391,7 +391,7 @@ int32_t FractureSession::fractureCutout(int32_t chunkId, const NvBlastExtUnityCu
     if (config.bitmap == nullptr || config.width == 0 || config.height == 0)
     {
         NVBLASTLL_LOG_ERROR(mLogFn, "Fracture: cutout requires a non-empty bitmap");
-        return NvBlastExtUnitySessionResult_InvalidArgument;
+        return NvBlastExtBridgeSessionResult_InvalidArgument;
     }
 
     reseed();
@@ -409,7 +409,7 @@ int32_t FractureSession::fractureCutout(int32_t chunkId, const NvBlastExtUnityCu
     if (cutoutConfig.cutoutSet == nullptr)
     {
         NVBLASTLL_LOG_ERROR(mLogFn, "Fracture: could not create the cutout set");
-        return NvBlastExtUnitySessionResult_FractureFailed;
+        return NvBlastExtBridgeSessionResult_FractureFailed;
     }
 
     NvBlastExtAuthoringBuildCutoutSet(*cutoutConfig.cutoutSet, config.bitmap, config.width, config.height,
@@ -423,10 +423,10 @@ int32_t FractureSession::fractureCutout(int32_t chunkId, const NvBlastExtUnityCu
     if (cutoutResult != 0)
     {
         NVBLASTLL_LOG_ERROR(mLogFn, "Fracture: cutout failed");
-        return NvBlastExtUnitySessionResult_FractureFailed;
+        return NvBlastExtBridgeSessionResult_FractureFailed;
     }
 
-    return NvBlastExtUnitySessionResult_Success;
+    return NvBlastExtBridgeSessionResult_Success;
 }
 
 int32_t FractureSession::detectIslands(int32_t chunkId, bool createAtNewDepth)
@@ -434,7 +434,7 @@ int32_t FractureSession::detectIslands(int32_t chunkId, bool createAtNewDepth)
     // Island detection rewrites the chunk in place rather than replacing it in its parent, so the
     // replace-chunk restriction does not apply and roots are legal targets.
     const int32_t validation = validateTarget(chunkId, false);
-    if (validation != NvBlastExtUnitySessionResult_Success)
+    if (validation != NvBlastExtBridgeSessionResult_Success)
     {
         return validation;
     }
@@ -520,21 +520,21 @@ uint32_t FractureSession::getChildChunkIds(int32_t chunkId, int32_t* outIds, uin
     return count;
 }
 
-int32_t FractureSession::getChunkInfo(int32_t chunkId, NvBlastExtUnityChunkInfo* outInfo) const
+int32_t FractureSession::getChunkInfo(int32_t chunkId, NvBlastExtBridgeChunkInfo* outInfo) const
 {
     if (mTool == nullptr)
     {
-        return NvBlastExtUnitySessionResult_InvalidSession;
+        return NvBlastExtBridgeSessionResult_InvalidSession;
     }
     if (outInfo == nullptr)
     {
-        return NvBlastExtUnitySessionResult_InvalidArgument;
+        return NvBlastExtBridgeSessionResult_InvalidArgument;
     }
 
     const int32_t infoIndex = mTool->getChunkInfoIndex(chunkId);
     if (infoIndex < 0)
     {
-        return NvBlastExtUnitySessionResult_InvalidChunk;
+        return NvBlastExtBridgeSessionResult_InvalidChunk;
     }
 
     const ChunkInfo&   info = mTool->getChunkInfo(infoIndex);
@@ -544,29 +544,29 @@ int32_t FractureSession::getChunkInfo(int32_t chunkId, NvBlastExtUnityChunkInfo*
     outInfo->parentChunkId = info.parentChunkId;
     outInfo->depth         = mTool->getChunkDepth(chunkId);
 
-    uint32_t flags = NvBlastExtUnityChunkFlag_None;
+    uint32_t flags = NvBlastExtBridgeChunkFlag_None;
     if ((info.flags & ChunkInfo::APPROXIMATE_BONDING) != 0)
     {
-        flags |= NvBlastExtUnityChunkFlag_ApproximateBonding;
+        flags |= NvBlastExtBridgeChunkFlag_ApproximateBonding;
     }
     if (info.isLeaf)
     {
-        flags |= NvBlastExtUnityChunkFlag_IsLeaf;
+        flags |= NvBlastExtBridgeChunkFlag_IsLeaf;
     }
     if (info.isChanged)
     {
-        flags |= NvBlastExtUnityChunkFlag_IsChanged;
+        flags |= NvBlastExtBridgeChunkFlag_IsChanged;
     }
     if (info.parentChunkId == -1)
     {
-        flags |= NvBlastExtUnityChunkFlag_IsRoot;
+        flags |= NvBlastExtBridgeChunkFlag_IsRoot;
     }
     outInfo->flags = flags;
 
     outInfo->worldTranslation = tm.t;
     outInfo->worldScale       = tm.s;
 
-    return NvBlastExtUnitySessionResult_Success;
+    return NvBlastExtBridgeSessionResult_Success;
 }
 
 int32_t FractureSession::getChunkDepth(int32_t chunkId) const
@@ -598,15 +598,15 @@ int32_t FractureSession::deleteChunkSubhierarchy(int32_t chunkId, bool deleteRoo
 {
     if (mTool == nullptr)
     {
-        return NvBlastExtUnitySessionResult_InvalidSession;
+        return NvBlastExtBridgeSessionResult_InvalidSession;
     }
     if (mTool->getChunkInfoIndex(chunkId) < 0)
     {
-        return NvBlastExtUnitySessionResult_InvalidChunk;
+        return NvBlastExtBridgeSessionResult_InvalidChunk;
     }
 
-    return mTool->deleteChunkSubhierarchy(chunkId, deleteRoot) ? NvBlastExtUnitySessionResult_Success
-                                                               : NvBlastExtUnitySessionResult_InvalidChunk;
+    return mTool->deleteChunkSubhierarchy(chunkId, deleteRoot) ? NvBlastExtBridgeSessionResult_Success
+                                                               : NvBlastExtBridgeSessionResult_InvalidChunk;
 }
 
 void FractureSession::uniteChunks(uint32_t threshold, uint32_t targetClusterSize, const uint32_t* chunksToMerge,
@@ -624,33 +624,33 @@ int32_t FractureSession::setApproximateBonding(int32_t chunkId, bool useApproxim
 {
     if (mTool == nullptr)
     {
-        return NvBlastExtUnitySessionResult_InvalidSession;
+        return NvBlastExtBridgeSessionResult_InvalidSession;
     }
 
     const int32_t infoIndex = mTool->getChunkInfoIndex(chunkId);
     if (infoIndex < 0)
     {
-        return NvBlastExtUnitySessionResult_InvalidChunk;
+        return NvBlastExtBridgeSessionResult_InvalidChunk;
     }
 
     return mTool->setApproximateBonding(static_cast<uint32_t>(infoIndex), useApproximateBonding)
-               ? NvBlastExtUnitySessionResult_Success
-               : NvBlastExtUnitySessionResult_InvalidChunk;
+               ? NvBlastExtBridgeSessionResult_Success
+               : NvBlastExtBridgeSessionResult_InvalidChunk;
 }
 
 int32_t FractureSession::fitUvToRect(int32_t chunkId, float side)
 {
     if (mTool == nullptr)
     {
-        return NvBlastExtUnitySessionResult_InvalidSession;
+        return NvBlastExtBridgeSessionResult_InvalidSession;
     }
     if (mTool->getChunkInfoIndex(chunkId) < 0)
     {
-        return NvBlastExtUnitySessionResult_InvalidChunk;
+        return NvBlastExtBridgeSessionResult_InvalidChunk;
     }
 
     mTool->fitUvToRect(side, static_cast<uint32_t>(chunkId));
-    return NvBlastExtUnitySessionResult_Success;
+    return NvBlastExtBridgeSessionResult_Success;
 }
 
 void FractureSession::fitAllUvToRect(float side)
@@ -667,11 +667,11 @@ int32_t FractureSession::setChunkStatic(int32_t chunkId, bool isStatic)
 {
     if (mTool == nullptr)
     {
-        return NvBlastExtUnitySessionResult_InvalidSession;
+        return NvBlastExtBridgeSessionResult_InvalidSession;
     }
     if (mTool->getChunkInfoIndex(chunkId) < 0)
     {
-        return NvBlastExtUnitySessionResult_InvalidChunk;
+        return NvBlastExtBridgeSessionResult_InvalidChunk;
     }
 
     if (isStatic)
@@ -683,7 +683,7 @@ int32_t FractureSession::setChunkStatic(int32_t chunkId, bool isStatic)
         mStaticChunks.erase(chunkId);
     }
 
-    return NvBlastExtUnitySessionResult_Success;
+    return NvBlastExtBridgeSessionResult_Success;
 }
 
 bool FractureSession::getChunkStatic(int32_t chunkId) const

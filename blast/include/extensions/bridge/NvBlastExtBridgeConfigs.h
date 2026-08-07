@@ -1,5 +1,5 @@
-#ifndef NVBLASTEXTUNITYCONFIGS_H
-#define NVBLASTEXTUNITYCONFIGS_H
+#ifndef NVBLASTEXTBRIDGECONFIGS_H
+#define NVBLASTEXTBRIDGECONFIGS_H
 
 #include "NvBlastGlobals.h"
 
@@ -32,6 +32,6 @@ struct ClusteredVoronoiConfiguration
 
 // Plane cut and cutout take their parameters from the session API rather than from a struct here:
 // both need noise settings, and cutout needs the full placement set, which the flat
-// NvBlastExtUnityCutoutConfiguration in NvBlastExtUnitySession.h carries.
+// NvBlastExtBridgeCutoutConfiguration in NvBlastExtBridgeSession.h carries.
 
 #endif

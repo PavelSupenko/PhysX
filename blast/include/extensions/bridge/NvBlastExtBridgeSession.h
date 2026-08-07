@@ -1,7 +1,7 @@
 //! @file
 //!
 //! @brief Persistent authoring session API — the interactive counterpart to the one-shot
-//!        fracture calls in NvBlastExtUnity.h.
+//!        fracture calls in NvBlastExtBridge.h.
 //!
 //! The one-shot API builds a FractureTool, fractures, and tears it down inside a single call, so
 //! every operation starts from the source mesh. An authoring tool needs the opposite: the artist
@@ -11,70 +11,70 @@
 //!
 //! Usage:
 //!
-//!     session = NvBlastExtUnitySessionCreate(logFn);
-//!     NvBlastExtUnitySessionSetSourceMeshes(session, meshes, count, ids);
-//!     NvBlastExtUnitySessionFractureVoronoi(session, 0, voronoiConfig, false);   // depth 1
-//!     NvBlastExtUnitySessionFractureVoronoi(session, 3, voronoiConfig, false);   // subdivide one chunk
-//!     NvBlastExtUnitySessionDeleteChunkSubhierarchy(session, 3, false);          // undo that
-//!     result = NvBlastExtUnitySessionFinalize(session, collisionBuilder, 1);
-//!     NvBlastExtUnitySessionRelease(session);
+//!     session = NvBlastExtBridgeSessionCreate(logFn);
+//!     NvBlastExtBridgeSessionSetSourceMeshes(session, meshes, count, ids);
+//!     NvBlastExtBridgeSessionFractureVoronoi(session, 0, voronoiConfig, false);   // depth 1
+//!     NvBlastExtBridgeSessionFractureVoronoi(session, 3, voronoiConfig, false);   // subdivide one chunk
+//!     NvBlastExtBridgeSessionDeleteChunkSubhierarchy(session, 3, false);          // undo that
+//!     result = NvBlastExtBridgeSessionFinalize(session, collisionBuilder, 1);
+//!     NvBlastExtBridgeSessionRelease(session);
 //!
 //! Conventions:
 //!
 //! - Chunks are addressed by **chunk ID**, never by info index. IDs are stable across operations;
 //!   info indices are positions in an internal array and shift whenever chunks are added or removed.
-//! - Booleans cross the ABI as NvBlastExtUnityBool (uint32_t, 0 or 1). C# `bool` marshals as a
+//! - Booleans cross the ABI as NvBlastExtBridgeBool (uint32_t, 0 or 1). C# `bool` marshals as a
 //!   4-byte BOOL by default but C++ `bool` is 1 byte, and the mismatch is silent — a fixed-width
 //!   integer removes the trap entirely. The same reason drives the flags field on chunk info.
 //! - Every entry point tolerates a null session and returns a failure code rather than crashing.
 
-#ifndef NVBLASTEXTUNITYSESSION_H
-#define NVBLASTEXTUNITYSESSION_H
+#ifndef NVBLASTEXTBRIDGESESSION_H
+#define NVBLASTEXTBRIDGESESSION_H
 
 #include "NvBlastGlobals.h"
 #include "NvBlastExtAuthoring.h"
 #include "NvBlastExtAuthoringMesh.h"
 #include "NvBlastExtAuthoringFractureTool.h"
-#include "NvBlastExtUnityConfigs.h"
+#include "NvBlastExtBridgeConfigs.h"
 
 using namespace Nv::Blast;
 
 /**
     Boolean marshalled across the C ABI. Use 0 for false and any non-zero value for true.
 */
-typedef uint32_t NvBlastExtUnityBool;
+typedef uint32_t NvBlastExtBridgeBool;
 
 /**
-    Opaque handle to an authoring session. Created by NvBlastExtUnitySessionCreate.
+    Opaque handle to an authoring session. Created by NvBlastExtBridgeSessionCreate.
 */
-typedef struct NvBlastExtUnityFractureSession NvBlastExtUnityFractureSession;
+typedef struct NvBlastExtBridgeFractureSession NvBlastExtBridgeFractureSession;
 
 /**
     Result codes returned by session operations.
 
     Values are negative so they never collide with the positive error codes the underlying
-    FractureTool returns; those are surfaced as NvBlastExtUnitySessionResult_FractureFailed.
+    FractureTool returns; those are surfaced as NvBlastExtBridgeSessionResult_FractureFailed.
 */
-enum NvBlastExtUnitySessionResult
+enum NvBlastExtBridgeSessionResult
 {
-    NvBlastExtUnitySessionResult_Success         = 0,   //!< Operation completed
-    NvBlastExtUnitySessionResult_InvalidSession  = -1,  //!< Session handle was null
-    NvBlastExtUnitySessionResult_NoSourceMesh    = -2,  //!< No source meshes have been set yet
-    NvBlastExtUnitySessionResult_InvalidChunk    = -3,  //!< No chunk with the requested ID exists
-    NvBlastExtUnitySessionResult_InvalidArgument = -4,  //!< A parameter was out of range or null
-    NvBlastExtUnitySessionResult_FractureFailed  = -5,  //!< The underlying fracture call failed
+    NvBlastExtBridgeSessionResult_Success         = 0,   //!< Operation completed
+    NvBlastExtBridgeSessionResult_InvalidSession  = -1,  //!< Session handle was null
+    NvBlastExtBridgeSessionResult_NoSourceMesh    = -2,  //!< No source meshes have been set yet
+    NvBlastExtBridgeSessionResult_InvalidChunk    = -3,  //!< No chunk with the requested ID exists
+    NvBlastExtBridgeSessionResult_InvalidArgument = -4,  //!< A parameter was out of range or null
+    NvBlastExtBridgeSessionResult_FractureFailed  = -5,  //!< The underlying fracture call failed
 };
 
 /**
-    Chunk state flags, reported in NvBlastExtUnityChunkInfo::flags.
+    Chunk state flags, reported in NvBlastExtBridgeChunkInfo::flags.
 */
-enum NvBlastExtUnityChunkFlags
+enum NvBlastExtBridgeChunkFlags
 {
-    NvBlastExtUnityChunkFlag_None               = 0,
-    NvBlastExtUnityChunkFlag_ApproximateBonding = 1 << 0,  //!< Produced by island split or merge; bonds are inexact
-    NvBlastExtUnityChunkFlag_IsLeaf             = 1 << 1,  //!< Chunk has no children
-    NvBlastExtUnityChunkFlag_IsChanged          = 1 << 2,  //!< Geometry changed since the last finalize
-    NvBlastExtUnityChunkFlag_IsRoot             = 1 << 3,  //!< Chunk is a source mesh (no parent)
+    NvBlastExtBridgeChunkFlag_None               = 0,
+    NvBlastExtBridgeChunkFlag_ApproximateBonding = 1 << 0,  //!< Produced by island split or merge; bonds are inexact
+    NvBlastExtBridgeChunkFlag_IsLeaf             = 1 << 1,  //!< Chunk has no children
+    NvBlastExtBridgeChunkFlag_IsChanged          = 1 << 2,  //!< Geometry changed since the last finalize
+    NvBlastExtBridgeChunkFlag_IsRoot             = 1 << 3,  //!< Chunk is a source mesh (no parent)
 };
 
 /**
@@ -84,12 +84,12 @@ enum NvBlastExtUnityChunkFlags
     protected. Every field here is 4 bytes wide, so the struct has the same layout under any
     reasonable packing on both sides of the boundary.
 */
-struct NvBlastExtUnityChunkInfo
+struct NvBlastExtBridgeChunkInfo
 {
     int32_t  chunkId;        //!< Stable identifier used to address this chunk
     int32_t  parentChunkId;  //!< Parent's chunk ID, or -1 for a source mesh
     int32_t  depth;          //!< 0 for source meshes, incrementing per subdivision level
-    uint32_t flags;          //!< Bitwise OR of NvBlastExtUnityChunkFlags
+    uint32_t flags;          //!< Bitwise OR of NvBlastExtBridgeChunkFlags
 
     /**
         The chunk's mesh is stored fitted to a unit cube; this transform maps it back to the space
@@ -107,7 +107,7 @@ struct NvBlastExtUnityChunkInfo
     a picked surface), and the bitmap that defines the pattern is carried alongside instead of a
     prebuilt CutoutSet, which the session builds and destroys internally.
 */
-struct NvBlastExtUnityCutoutConfiguration
+struct NvBlastExtBridgeCutoutConfiguration
 {
     NvcVec3 point;   //!< Point on the projection plane
     NvcVec3 normal;  //!< Projection direction; the pattern is projected along it
@@ -130,20 +130,20 @@ struct NvBlastExtUnityCutoutConfiguration
     /**
         If set, `point` is a displacement from the chunk centre rather than an absolute position.
     */
-    NvBlastExtUnityBool isRelativeTransform;
+    NvBlastExtBridgeBool isRelativeTransform;
 
     /**
         If set, generated faces join the smoothing group of the face they were cut from.
     */
-    NvBlastExtUnityBool useSmoothing;
+    NvBlastExtBridgeBool useSmoothing;
 
     /**
         Segmentation tuning for tracing loops out of the bitmap.
     */
     float               segmentationErrorThreshold;
     float               snapThreshold;
-    NvBlastExtUnityBool periodic;    //!< Treat the bitmap as tiling
-    NvBlastExtUnityBool expandGaps;  //!< Close small gaps between adjacent loops
+    NvBlastExtBridgeBool periodic;    //!< Treat the bitmap as tiling
+    NvBlastExtBridgeBool expandGaps;  //!< Close small gaps between adjacent loops
 
     NoiseConfiguration noise;  //!< Surface noise for the cut faces
 };
@@ -153,21 +153,21 @@ struct NvBlastExtUnityCutoutConfiguration
 /**
     Creates an authoring session holding its own FractureTool and random generator.
     \param[in] logFn Log callback, may be null.
-    \return Session handle; release with NvBlastExtUnitySessionRelease.
+    \return Session handle; release with NvBlastExtBridgeSessionRelease.
 */
-NV_C_API NvBlastExtUnityFractureSession* NvBlastExtUnitySessionCreate(NvBlastLog logFn);
+NV_C_API NvBlastExtBridgeFractureSession* NvBlastExtBridgeSessionCreate(NvBlastLog logFn);
 
 /**
     Destroys the session and everything it owns. Meshes returned by CreateChunkMesh and the
     AuthoringResult returned by Finalize are *not* owned by the session and outlive it.
 */
-NV_C_API void NvBlastExtUnitySessionRelease(NvBlastExtUnityFractureSession* session);
+NV_C_API void NvBlastExtBridgeSessionRelease(NvBlastExtBridgeFractureSession* session);
 
 /**
     Drops all chunks and source meshes, returning the session to its just-created state.
     Interior material ID and seed are preserved.
 */
-NV_C_API void NvBlastExtUnitySessionReset(NvBlastExtUnityFractureSession* session);
+NV_C_API void NvBlastExtBridgeSessionReset(NvBlastExtBridgeFractureSession* session);
 
 // ─── Source meshes ────────────────────────────────────────────────────────────
 
@@ -181,9 +181,9 @@ NV_C_API void NvBlastExtUnitySessionReset(NvBlastExtUnityFractureSession* sessio
     \param[in] meshCount Number of meshes.
     \param[in] ids       Chunk IDs to assign, one per mesh. If null, IDs are allocated sequentially
                          from 0. These become the root chunk IDs.
-    \return NvBlastExtUnitySessionResult_Success on success.
+    \return NvBlastExtBridgeSessionResult_Success on success.
 */
-NV_C_API int32_t NvBlastExtUnitySessionSetSourceMeshes(NvBlastExtUnityFractureSession* session,
+NV_C_API int32_t NvBlastExtBridgeSessionSetSourceMeshes(NvBlastExtBridgeFractureSession* session,
                                                        Mesh** meshes, uint32_t meshCount, const int32_t* ids);
 
 // ─── Settings ─────────────────────────────────────────────────────────────────
@@ -195,32 +195,32 @@ NV_C_API int32_t NvBlastExtUnitySessionSetSourceMeshes(NvBlastExtUnityFractureSe
     the same seed and parameters reproduces the same chunks regardless of what happened in between.
     Advancing the seed is how a tool offers the artist a different random variation of the same settings.
 */
-NV_C_API void NvBlastExtUnitySessionSetSeed(NvBlastExtUnityFractureSession* session, int32_t seed);
+NV_C_API void NvBlastExtBridgeSessionSetSeed(NvBlastExtBridgeFractureSession* session, int32_t seed);
 
-NV_C_API int32_t NvBlastExtUnitySessionGetSeed(const NvBlastExtUnityFractureSession* session);
+NV_C_API int32_t NvBlastExtBridgeSessionGetSeed(const NvBlastExtBridgeFractureSession* session);
 
 /**
     Sets the material ID applied to newly created interior faces.
 */
-NV_C_API void NvBlastExtUnitySessionSetInteriorMaterialId(NvBlastExtUnityFractureSession* session, int32_t materialId);
+NV_C_API void NvBlastExtBridgeSessionSetInteriorMaterialId(NvBlastExtBridgeFractureSession* session, int32_t materialId);
 
-NV_C_API int32_t NvBlastExtUnitySessionGetInteriorMaterialId(const NvBlastExtUnityFractureSession* session);
+NV_C_API int32_t NvBlastExtBridgeSessionGetInteriorMaterialId(const NvBlastExtBridgeFractureSession* session);
 
 /**
     Replaces a material ID across all existing faces.
 */
-NV_C_API void NvBlastExtUnitySessionReplaceMaterialId(NvBlastExtUnityFractureSession* session,
+NV_C_API void NvBlastExtBridgeSessionReplaceMaterialId(NvBlastExtBridgeFractureSession* session,
                                                        int32_t oldMaterialId, int32_t newMaterialId);
 
 /**
     Enables automatic island removal during fracturing. May cause instabilities; off by default.
 */
-NV_C_API void NvBlastExtUnitySessionSetRemoveIslands(NvBlastExtUnityFractureSession* session,
-                                                      NvBlastExtUnityBool removeIslands);
+NV_C_API void NvBlastExtBridgeSessionSetRemoveIslands(NvBlastExtBridgeFractureSession* session,
+                                                      NvBlastExtBridgeBool removeIslands);
 
 // ─── Fracture operations ──────────────────────────────────────────────────────
 //
-// Each operation targets one chunk by ID and returns an NvBlastExtUnitySessionResult.
+// Each operation targets one chunk by ID and returns an NvBlastExtBridgeSessionResult.
 //
 // replaceChunk == false places the new chunks one depth level below the target, keeping the target
 // as their parent — this is the subdivision the artist expects when drilling into a chunk.
@@ -233,74 +233,74 @@ NV_C_API void NvBlastExtUnitySessionSetRemoveIslands(NvBlastExtUnityFractureSess
 /**
     Fractures a chunk into uniformly distributed Voronoi cells.
 */
-NV_C_API int32_t NvBlastExtUnitySessionFractureVoronoi(NvBlastExtUnityFractureSession* session, int32_t chunkId,
+NV_C_API int32_t NvBlastExtBridgeSessionFractureVoronoi(NvBlastExtBridgeFractureSession* session, int32_t chunkId,
                                                         VoronoiConfiguration config,
-                                                        NvBlastExtUnityBool replaceChunk);
+                                                        NvBlastExtBridgeBool replaceChunk);
 
 /**
     Fractures a chunk into Voronoi cells gathered into clusters, giving a less uniform break-up.
 */
-NV_C_API int32_t NvBlastExtUnitySessionFractureClusteredVoronoi(NvBlastExtUnityFractureSession* session,
+NV_C_API int32_t NvBlastExtBridgeSessionFractureClusteredVoronoi(NvBlastExtBridgeFractureSession* session,
                                                                  int32_t chunkId,
                                                                  ClusteredVoronoiConfiguration config,
-                                                                 NvBlastExtUnityBool replaceChunk);
+                                                                 NvBlastExtBridgeBool replaceChunk);
 
 /**
     Fractures a chunk into Voronoi cells seeded in a sphere — useful for localized impact damage.
     \param[in] center Sphere centre, in the space the source meshes were supplied in.
 */
-NV_C_API int32_t NvBlastExtUnitySessionFractureVoronoiInSphere(NvBlastExtUnityFractureSession* session,
+NV_C_API int32_t NvBlastExtBridgeSessionFractureVoronoiInSphere(NvBlastExtBridgeFractureSession* session,
                                                                 int32_t chunkId, uint32_t cellCount, float radius,
-                                                                NvcVec3 center, NvBlastExtUnityBool replaceChunk);
+                                                                NvcVec3 center, NvBlastExtBridgeBool replaceChunk);
 
 /**
     Fractures a chunk with an explicit set of Voronoi sites, letting a tool place cells itself.
     \param[in] sites     Array of site positions, in the space the source meshes were supplied in.
     \param[in] siteCount Number of sites; must be at least 2.
 */
-NV_C_API int32_t NvBlastExtUnitySessionFractureVoronoiWithSites(NvBlastExtUnityFractureSession* session,
+NV_C_API int32_t NvBlastExtBridgeSessionFractureVoronoiWithSites(NvBlastExtBridgeFractureSession* session,
                                                                  int32_t chunkId, const NvcVec3* sites,
                                                                  uint32_t siteCount,
-                                                                 NvBlastExtUnityBool replaceChunk);
+                                                                 NvBlastExtBridgeBool replaceChunk);
 
 /**
     Fractures a chunk with the slicing method (a noisy grid of cuts along each axis).
 */
-NV_C_API int32_t NvBlastExtUnitySessionFractureSlicing(NvBlastExtUnityFractureSession* session, int32_t chunkId,
+NV_C_API int32_t NvBlastExtBridgeSessionFractureSlicing(NvBlastExtBridgeFractureSession* session, int32_t chunkId,
                                                         SlicingConfiguration config,
-                                                        NvBlastExtUnityBool replaceChunk);
+                                                        NvBlastExtBridgeBool replaceChunk);
 
 /**
     Splits a chunk with a single, optionally noisy plane.
     \param[in] noise Surface noise for the cut; amplitude 0 gives a flat cut.
 */
-NV_C_API int32_t NvBlastExtUnitySessionFractureCut(NvBlastExtUnityFractureSession* session, int32_t chunkId,
+NV_C_API int32_t NvBlastExtBridgeSessionFractureCut(NvBlastExtBridgeFractureSession* session, int32_t chunkId,
                                                     NvcVec3 normal, NvcVec3 point, NoiseConfiguration noise,
-                                                    NvBlastExtUnityBool replaceChunk);
+                                                    NvBlastExtBridgeBool replaceChunk);
 
 /**
     Cuts a chunk with a 2D pattern extracted from a bitmap, projected along a normal.
 
-    \param[in] config Pattern source and placement, see NvBlastExtUnityCutoutConfiguration.
+    \param[in] config Pattern source and placement, see NvBlastExtBridgeCutoutConfiguration.
 */
-NV_C_API int32_t NvBlastExtUnitySessionFractureCutout(NvBlastExtUnityFractureSession* session, int32_t chunkId,
-                                                       const NvBlastExtUnityCutoutConfiguration* config,
-                                                       NvBlastExtUnityBool replaceChunk);
+NV_C_API int32_t NvBlastExtBridgeSessionFractureCutout(NvBlastExtBridgeFractureSession* session, int32_t chunkId,
+                                                       const NvBlastExtBridgeCutoutConfiguration* config,
+                                                       NvBlastExtBridgeBool replaceChunk);
 
 /**
     Splits disconnected pieces of a chunk into separate chunks.
     \param[in] createAtNewDepth If true, islands become children; if false they replace the chunk.
-    \return Number of islands found (>= 0), or a negative NvBlastExtUnitySessionResult on failure.
+    \return Number of islands found (>= 0), or a negative NvBlastExtBridgeSessionResult on failure.
 */
-NV_C_API int32_t NvBlastExtUnitySessionDetectIslands(NvBlastExtUnityFractureSession* session, int32_t chunkId,
-                                                      NvBlastExtUnityBool createAtNewDepth);
+NV_C_API int32_t NvBlastExtBridgeSessionDetectIslands(NvBlastExtBridgeFractureSession* session, int32_t chunkId,
+                                                      NvBlastExtBridgeBool createAtNewDepth);
 
 // ─── Hierarchy queries ────────────────────────────────────────────────────────
 
 /**
     Returns the total number of chunks, including source meshes.
 */
-NV_C_API uint32_t NvBlastExtUnitySessionGetChunkCount(const NvBlastExtUnityFractureSession* session);
+NV_C_API uint32_t NvBlastExtBridgeSessionGetChunkCount(const NvBlastExtBridgeFractureSession* session);
 
 /**
     Fills the IDs of every chunk in the session.
@@ -311,34 +311,34 @@ NV_C_API uint32_t NvBlastExtUnitySessionGetChunkCount(const NvBlastExtUnityFract
     \param[in]  maxIds  Capacity of outIds; at most this many entries are written.
     \return Total number of chunks, which may exceed maxIds.
 */
-NV_C_API uint32_t NvBlastExtUnitySessionGetChunkIds(const NvBlastExtUnityFractureSession* session, int32_t* outIds,
+NV_C_API uint32_t NvBlastExtBridgeSessionGetChunkIds(const NvBlastExtBridgeFractureSession* session, int32_t* outIds,
                                                      uint32_t maxIds);
 
 /**
     Fills the IDs of every chunk at a given depth. Same two-phase convention as GetChunkIds.
     \param[in] depth 0 selects the source meshes.
 */
-NV_C_API uint32_t NvBlastExtUnitySessionGetChunkIdsAtDepth(const NvBlastExtUnityFractureSession* session,
+NV_C_API uint32_t NvBlastExtBridgeSessionGetChunkIdsAtDepth(const NvBlastExtBridgeFractureSession* session,
                                                             uint32_t depth, int32_t* outIds, uint32_t maxIds);
 
 /**
     Fills the IDs of a chunk's direct children. Same two-phase convention as GetChunkIds.
 */
-NV_C_API uint32_t NvBlastExtUnitySessionGetChildChunkIds(const NvBlastExtUnityFractureSession* session,
+NV_C_API uint32_t NvBlastExtBridgeSessionGetChildChunkIds(const NvBlastExtBridgeFractureSession* session,
                                                           int32_t chunkId, int32_t* outIds, uint32_t maxIds);
 
 /**
     Retrieves a chunk's descriptor.
     \param[out] outInfo Filled on success; untouched otherwise.
-    \return NvBlastExtUnitySessionResult_Success, or InvalidChunk if no such chunk exists.
+    \return NvBlastExtBridgeSessionResult_Success, or InvalidChunk if no such chunk exists.
 */
-NV_C_API int32_t NvBlastExtUnitySessionGetChunkInfo(const NvBlastExtUnityFractureSession* session, int32_t chunkId,
-                                                     NvBlastExtUnityChunkInfo* outInfo);
+NV_C_API int32_t NvBlastExtBridgeSessionGetChunkInfo(const NvBlastExtBridgeFractureSession* session, int32_t chunkId,
+                                                     NvBlastExtBridgeChunkInfo* outInfo);
 
 /**
     Returns a chunk's depth, or -1 if it does not exist.
 */
-NV_C_API int32_t NvBlastExtUnitySessionGetChunkDepth(const NvBlastExtUnityFractureSession* session, int32_t chunkId);
+NV_C_API int32_t NvBlastExtBridgeSessionGetChunkDepth(const NvBlastExtBridgeFractureSession* session, int32_t chunkId);
 
 // ─── Chunk geometry ───────────────────────────────────────────────────────────
 
@@ -346,14 +346,14 @@ NV_C_API int32_t NvBlastExtUnitySessionGetChunkDepth(const NvBlastExtUnityFractu
     Builds a standalone mesh for one chunk, in the space the source meshes were supplied in.
 
     This is how a tool previews a chunk without finalizing the whole asset. The returned mesh is
-    owned by the caller — release it with NvBlastExtUnityReleaseMesh — and is a snapshot: it does
+    owned by the caller — release it with NvBlastExtBridgeReleaseMesh — and is a snapshot: it does
     not track later edits to the chunk.
 
     \param[in] splitUVs If true, vertices are also split on differing UVs.
     \return Mesh, or null if the chunk does not exist.
 */
-NV_C_API Mesh* NvBlastExtUnitySessionCreateChunkMesh(NvBlastExtUnityFractureSession* session, int32_t chunkId,
-                                                      NvBlastExtUnityBool splitUVs);
+NV_C_API Mesh* NvBlastExtBridgeSessionCreateChunkMesh(NvBlastExtBridgeFractureSession* session, int32_t chunkId,
+                                                      NvBlastExtBridgeBool splitUVs);
 
 // ─── Hierarchy editing ────────────────────────────────────────────────────────
 
@@ -362,10 +362,10 @@ NV_C_API Mesh* NvBlastExtUnitySessionCreateChunkMesh(NvBlastExtUnityFractureSess
     subdivision: deleting the children of the chunk that was fractured restores it to a leaf.
 
     \param[in] deleteRoot If true the chunk is removed as well.
-    \return NvBlastExtUnitySessionResult_Success if anything was removed, InvalidChunk otherwise.
+    \return NvBlastExtBridgeSessionResult_Success if anything was removed, InvalidChunk otherwise.
 */
-NV_C_API int32_t NvBlastExtUnitySessionDeleteChunkSubhierarchy(NvBlastExtUnityFractureSession* session,
-                                                                int32_t chunkId, NvBlastExtUnityBool deleteRoot);
+NV_C_API int32_t NvBlastExtBridgeSessionDeleteChunkSubhierarchy(NvBlastExtBridgeFractureSession* session,
+                                                                int32_t chunkId, NvBlastExtBridgeBool deleteRoot);
 
 /**
     Rebalances a flat hierarchy into a tree with a bounded number of children per chunk, which the
@@ -377,27 +377,27 @@ NV_C_API int32_t NvBlastExtUnitySessionDeleteChunkSubhierarchy(NvBlastExtUnityFr
     \param[in] mergeChunkCount     Length of chunksToMerge when it is non-null.
     \param[in] removeOriginalChunks If true, merged chunks are removed.
 */
-NV_C_API void NvBlastExtUnitySessionUniteChunks(NvBlastExtUnityFractureSession* session, uint32_t threshold,
+NV_C_API void NvBlastExtBridgeSessionUniteChunks(NvBlastExtBridgeFractureSession* session, uint32_t threshold,
                                                  uint32_t targetClusterSize, const uint32_t* chunksToMerge,
                                                  uint32_t mergeChunkCount,
-                                                 NvBlastExtUnityBool removeOriginalChunks);
+                                                 NvBlastExtBridgeBool removeOriginalChunks);
 
 /**
     Marks a chunk as needing approximate bond detection, which is required when its geometry did not
     come from an exact cut (island splitting, merges, externally supplied meshes).
 */
-NV_C_API int32_t NvBlastExtUnitySessionSetApproximateBonding(NvBlastExtUnityFractureSession* session, int32_t chunkId,
-                                                              NvBlastExtUnityBool useApproximateBonding);
+NV_C_API int32_t NvBlastExtBridgeSessionSetApproximateBonding(NvBlastExtBridgeFractureSession* session, int32_t chunkId,
+                                                              NvBlastExtBridgeBool useApproximateBonding);
 
 /**
     Rescales one chunk's interior UVs to fit a square of the given side.
 */
-NV_C_API int32_t NvBlastExtUnitySessionFitUvToRect(NvBlastExtUnityFractureSession* session, int32_t chunkId, float side);
+NV_C_API int32_t NvBlastExtBridgeSessionFitUvToRect(NvBlastExtBridgeFractureSession* session, int32_t chunkId, float side);
 
 /**
     Rescales every chunk's interior UVs to fit a square of the given side, preserving relative sizes.
 */
-NV_C_API void NvBlastExtUnitySessionFitAllUvToRect(NvBlastExtUnityFractureSession* session, float side);
+NV_C_API void NvBlastExtBridgeSessionFitAllUvToRect(NvBlastExtBridgeFractureSession* session, float side);
 
 // ─── Support graph ────────────────────────────────────────────────────────────
 //
@@ -415,27 +415,27 @@ NV_C_API void NvBlastExtUnitySessionFitAllUvToRect(NvBlastExtUnityFractureSessio
     The mark is remembered per chunk ID and survives fracturing elsewhere in the hierarchy; marks on
     chunks that are later deleted are simply never applied.
 
-    \return NvBlastExtUnitySessionResult_Success, or InvalidChunk if no such chunk exists.
+    \return NvBlastExtBridgeSessionResult_Success, or InvalidChunk if no such chunk exists.
 */
-NV_C_API int32_t NvBlastExtUnitySessionSetChunkStatic(NvBlastExtUnityFractureSession* session, int32_t chunkId,
-                                                       NvBlastExtUnityBool isStatic);
+NV_C_API int32_t NvBlastExtBridgeSessionSetChunkStatic(NvBlastExtBridgeFractureSession* session, int32_t chunkId,
+                                                       NvBlastExtBridgeBool isStatic);
 
 /**
     Returns non-zero if the chunk is marked as anchored to the world.
 */
-NV_C_API NvBlastExtUnityBool NvBlastExtUnitySessionGetChunkStatic(const NvBlastExtUnityFractureSession* session,
+NV_C_API NvBlastExtBridgeBool NvBlastExtBridgeSessionGetChunkStatic(const NvBlastExtBridgeFractureSession* session,
                                                                    int32_t chunkId);
 
 /**
     Fills the IDs of every chunk marked static. Same two-phase convention as GetChunkIds.
 */
-NV_C_API uint32_t NvBlastExtUnitySessionGetStaticChunkIds(const NvBlastExtUnityFractureSession* session,
+NV_C_API uint32_t NvBlastExtBridgeSessionGetStaticChunkIds(const NvBlastExtBridgeFractureSession* session,
                                                            int32_t* outIds, uint32_t maxIds);
 
 /**
     Clears every static mark.
 */
-NV_C_API void NvBlastExtUnitySessionClearStaticChunks(NvBlastExtUnityFractureSession* session);
+NV_C_API void NvBlastExtBridgeSessionClearStaticChunks(NvBlastExtBridgeFractureSession* session);
 
 /**
     Reports whether a chunk would be a support chunk under the given depth rule.
@@ -446,14 +446,14 @@ NV_C_API void NvBlastExtUnitySessionClearStaticChunks(NvBlastExtUnityFractureSes
     \param[in] defaultSupportDepth Same value that will be passed to Finalize; -1 makes leaves support.
     \return Non-zero if the chunk would be a support chunk.
 */
-NV_C_API NvBlastExtUnityBool NvBlastExtUnitySessionIsChunkSupport(const NvBlastExtUnityFractureSession* session,
+NV_C_API NvBlastExtBridgeBool NvBlastExtBridgeSessionIsChunkSupport(const NvBlastExtBridgeFractureSession* session,
                                                                    int32_t chunkId, int32_t defaultSupportDepth);
 
 /**
     Sets the direction of the bonds tying static chunks to the world. Defaults to (0, -1, 0), which
     reads as "held from below" for an object standing on the ground.
 */
-NV_C_API void NvBlastExtUnitySessionSetWorldBondDirection(NvBlastExtUnityFractureSession* session,
+NV_C_API void NvBlastExtBridgeSessionSetWorldBondDirection(NvBlastExtBridgeFractureSession* session,
                                                            NvcVec3 direction);
 
 // ─── Finalize ─────────────────────────────────────────────────────────────────
@@ -465,16 +465,16 @@ NV_C_API void NvBlastExtUnitySessionSetWorldBondDirection(NvBlastExtUnityFractur
     The session stays usable afterwards, so a tool can finalize for preview, keep editing, and
     finalize again.
 
-    \param[in] collisionBuilder   Builder for collision hulls, from NvBlastExtUnityCreateCollisionBuilder.
+    \param[in] collisionBuilder   Builder for collision hulls, from NvBlastExtBridgeCreateCollisionBuilder.
     \param[in] aggregateMaxCount  Maximum convex hulls per chunk; values below 1 are treated as 1.
     \param[in] defaultSupportDepth Depth at which chunks become support chunks — the level the
                                   simulation treats as the breakable unit. Pass -1 to instead make
                                   every leaf a support chunk, which is the usual default.
-    \return AuthoringResult owned by the caller. Release it with NvBlastExtUnityReleaseAuthoringResult
+    \return AuthoringResult owned by the caller. Release it with NvBlastExtBridgeReleaseAuthoringResult
             *before* releasing the collision builder. Null on failure.
 */
-NV_C_API AuthoringResult* NvBlastExtUnitySessionFinalize(NvBlastExtUnityFractureSession* session,
+NV_C_API AuthoringResult* NvBlastExtBridgeSessionFinalize(NvBlastExtBridgeFractureSession* session,
                                                           ConvexMeshBuilder* collisionBuilder,
                                                           uint32_t aggregateMaxCount, int32_t defaultSupportDepth);
 
-#endif  // ifndef NVBLASTEXTUNITYSESSION_H
+#endif  // ifndef NVBLASTEXTBRIDGESESSION_H
