@@ -410,37 +410,42 @@ TEST_F(APITest, SubsupportFracture)
     NvBlastChunkFractureData f5 = { 0, 5, 1.0f };
     NvBlastChunkFractureData f7 = { 0, 7, 1.0f };
 
-    std::vector<NvBlastChunkFractureData> chunkFractureData;
-    chunkFractureData.reserve(assetDesc.chunkCount);
-    chunkFractureData.push_back(f1);
-    chunkFractureData.push_back(f3);
-    chunkFractureData.push_back(f5);
-    chunkFractureData.push_back(f7);
-    ASSERT_EQ(assetDesc.chunkCount, chunkFractureData.capacity());
-    ASSERT_EQ(4, chunkFractureData.size());
+    // The events buffer is this vector's entire storage, so the vector has to *hold* that many
+    // elements rather than merely reserve room for them. A bare reserve() leaves everything past
+    // size() outside the container as far as AddressSanitizer is concerned, and the library writing
+    // its events there is reported as a container-overflow even though the memory is allocated and
+    // owned. Sizing the vector to the buffer says what is actually meant and keeps the annotation
+    // honest; the allocation, and so the test, is unchanged.
+    std::vector<NvBlastChunkFractureData> chunkFractureData(assetDesc.chunkCount);
+    const uint32_t                        firstCommandCount = 4;
 
-    NvBlastFractureBuffers target = { 0, static_cast<uint32_t>(chunkFractureData.capacity()), nullptr, chunkFractureData.data() };
+    auto setFirstCommands = [&]
+    {
+        chunkFractureData.assign(assetDesc.chunkCount, NvBlastChunkFractureData{});
+        chunkFractureData[0] = f1;
+        chunkFractureData[1] = f3;
+        chunkFractureData[2] = f5;
+        chunkFractureData[3] = f7;
+    };
+
+    setFirstCommands();
+    ASSERT_EQ(assetDesc.chunkCount, chunkFractureData.size());
+
+    NvBlastFractureBuffers target = { 0, static_cast<uint32_t>(chunkFractureData.size()), nullptr, chunkFractureData.data() };
     {
         NvBlastFractureBuffers events = target;
-        NvBlastFractureBuffers commands = { 0, static_cast<uint32_t>(chunkFractureData.size()), nullptr, chunkFractureData.data() };
+        NvBlastFractureBuffers commands = { 0, firstCommandCount, nullptr, chunkFractureData.data() };
         NvBlastActorApplyFracture(&events, actor, &commands, messageLog, nullptr);
         EXPECT_TRUE(NvBlastActorIsSplitRequired(actor, messageLog));
         ASSERT_EQ(4 + 8, events.chunkFractureCount); // all requested chunks take damage, and the children of one of them
     }
 
     // re-apply same set of commands
-    chunkFractureData.clear();
-    chunkFractureData.reserve(assetDesc.chunkCount);
-    chunkFractureData.push_back(f1);
-    chunkFractureData.push_back(f3);
-    chunkFractureData.push_back(f5);
-    chunkFractureData.push_back(f7);
-    ASSERT_EQ(assetDesc.chunkCount, chunkFractureData.capacity());
-    ASSERT_EQ(4, chunkFractureData.size());
+    setFirstCommands();
 
     {
         NvBlastFractureBuffers events = target;
-        NvBlastFractureBuffers commands = { 0, static_cast<uint32_t>(chunkFractureData.size()), nullptr, chunkFractureData.data() };
+        NvBlastFractureBuffers commands = { 0, firstCommandCount, nullptr, chunkFractureData.data() };
         NvBlastActorApplyFracture(&events, actor, &commands, messageLog, nullptr);
         EXPECT_TRUE(NvBlastActorIsSplitRequired(actor, messageLog));
         ASSERT_EQ(1, events.chunkFractureCount); // f3 has broken the chunk
@@ -453,22 +458,20 @@ TEST_F(APITest, SubsupportFracture)
     NvBlastChunkFractureData f6 = { 0, 6, 2.0f }; // will damage chunk and children
     NvBlastChunkFractureData f8 = { 0, 8, 1.0f }; // will damage chunk 
 
-    chunkFractureData.clear();
-    chunkFractureData.reserve(assetDesc.chunkCount);
-    chunkFractureData.push_back(f1);
-    chunkFractureData.push_back(f2);
-    chunkFractureData.push_back(f3);
-    chunkFractureData.push_back(f4);
-    chunkFractureData.push_back(f5);
-    chunkFractureData.push_back(f6);
-    chunkFractureData.push_back(f7);
-    chunkFractureData.push_back(f8);
-    ASSERT_EQ(assetDesc.chunkCount, chunkFractureData.capacity());
-    ASSERT_EQ(8, chunkFractureData.size());
+    chunkFractureData.assign(assetDesc.chunkCount, NvBlastChunkFractureData{});
+    chunkFractureData[0] = f1;
+    chunkFractureData[1] = f2;
+    chunkFractureData[2] = f3;
+    chunkFractureData[3] = f4;
+    chunkFractureData[4] = f5;
+    chunkFractureData[5] = f6;
+    chunkFractureData[6] = f7;
+    chunkFractureData[7] = f8;
+    ASSERT_EQ(assetDesc.chunkCount, chunkFractureData.size());
 
     NvBlastFractureBuffers events = target;
     {
-        NvBlastFractureBuffers commands = { 0, static_cast<uint32_t>(chunkFractureData.size()), nullptr, chunkFractureData.data() };
+        NvBlastFractureBuffers commands = { 0, 8, nullptr, chunkFractureData.data() };
         NvBlastActorApplyFracture(&events, actor, &commands, messageLog, nullptr);
         EXPECT_TRUE(NvBlastActorIsSplitRequired(actor, messageLog));
         ASSERT_EQ(4 + 8 + 8, events.chunkFractureCount); // the new fracture commands all apply, plus two of them damage their children too

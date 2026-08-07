@@ -12,11 +12,24 @@ A fork of NVIDIA PhysX (merged with the O3DE community fork for Mac/iOS/Android 
 
 | Path | Role |
 |---|---|
-| `PhysX/blast/` | C++ source of the Blast SDK and the custom `NvBlastExtUnity` C-API bridge (the thing being developed) |
+| `PhysX/blast/` | C++ source of the Blast SDK and the custom `NvBlastExtBridge` C-API bridge (the thing being developed) |
 | `../blast-unity/` | Unity 6 project; the C# side lives in `Packages/com.pavlo-supenko.unity-blaster/` |
 | `../Blast/` | Pristine upstream `NVIDIAGameWorks/Blast` clone — read-only reference for original SDK behavior/samples |
 
 Native libraries are built in `PhysX/blast/`, then **copied by hand** into `blast-unity/Packages/com.pavlo-supenko.unity-blaster/Plugins/<platform>/`. There is no automated deployment step. Each `.dylib`/`.so` needs a Unity `.meta` PluginImporter file with the right platform enabled — copy the settings from a sibling library rather than letting Unity regenerate them.
+
+Copy the libraries, not the build directory. `macos-arm64/` had picked up CMake's generated `Makefile` along with the `UnitTests` and `TestProgram` executables — 1.5 MB of build output that Unity imported and shipped as part of the package.
+
+Check what you built before shipping it: `lipo -info` for the architecture and `vtool -show-build` for the platform and deployment target. The `ios-arm64` slot held a **macOS** dylib for a long time without anyone noticing, because nothing in the copy step distinguishes them. The iOS build also needs its deployment target set explicitly — CMake otherwise pins `minos` to the SDK version and the plugin silently stops loading on anything older:
+
+```bash
+cmake -S . -B build_artifacts/build/ios-arm64 -G Xcode -DNV_CONFIGURATION_TYPE=release \
+  -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_ARCHITECTURES=arm64 \
+  -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
+  -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO
+```
+
+Signing has to be off or the build stops asking for a development team; Unity signs the plugin when it builds the app.
 
 **Delete the old library before copying, don't overwrite it in place.** If the Editor has the project open it has the `.dylib` loaded, and overwriting keeps the same inode. macOS then guards that image: `git add` and even `git hash-object` on the file die with SIGKILL, while `shasum` and `cp` read it fine, which makes the failure look like a git or sandbox problem rather than a file one. `rm` followed by `cp` gives a fresh inode and the symptom disappears.
 
@@ -49,7 +62,7 @@ Build logs go to `cmake_configure.log` / `cmake_build.log` inside the build dire
 ./build_artifacts/build/macos-arm64/UnitTests --gtest_filter=ActorTests.*     # single suite
 ```
 
-A green run is **124 passing**. `APITest.SubsupportFracture` reports a `container-overflow` under AddressSanitizer inside `NvBlastFamily::fractureSubSupport` — that predates this project's work and is not a regression.
+A green run is **123 passing**, and the suite is clean under AddressSanitizer too — treat any ASan finding as a regression. Note that ASan halts on the first error, so one failure hides every later one; after fixing one, re-run before concluding anything.
 
 `BlastBaseTest` registers itself as Blast's global error callback in its constructor and clears it in its destructor. The clear matters: gtest destroys the test object after each test, and without it any Blast message logged from *outside* a live test calls into freed memory. That produced a crash that looked like it lived in serialization and survived changing the codec, the manager's lifetime and the release order — AddressSanitizer is what found it. An ASan build can be configured with:
 
@@ -59,44 +72,53 @@ cmake -S . -B build_artifacts/build/macos-arm64-asan -DNV_CONFIGURATION_TYPE=rel
   -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address" -DCMAKE_SHARED_LINKER_FLAGS="-fsanitize=address"
 ```
 
-`TestProgram` is a hand-edited scratch harness ([blast/source/program/TestProgram.cpp](blast/source/program/TestProgram.cpp)) that fractures a hardcoded cube through the Unity C-API — the fastest way to debug the bridge without launching Unity. Edit `createFracturer()` to select the algorithm under test. VS Code has a `Debug Blast Test Program` lldb launch config pointed at the `macos-arm64` build.
+`TestProgram` is a hand-edited scratch harness ([blast/source/program/TestProgram.cpp](blast/source/program/TestProgram.cpp)) that fractures a hardcoded cube through the session C-API — the fastest way to debug the bridge without launching Unity. Edit `fracture()` to select the algorithm under test. VS Code has a `Debug Blast Test Program` lldb launch config pointed at the `macos-arm64` build.
 
-Unity-side tests live in `Packages/com.pavlo-supenko.unity-blaster/Tests/` (NUnit, Editor-only) and run from Unity's Test Runner.
+Unity-side tests live in `Packages/com.pavlo-supenko.unity-blaster/Tests/` (NUnit, Editor-only) and run from Unity's Test Runner. To run them headlessly, work on an APFS clone — an open Editor holds the project lock, and `cp -Rc` costs neither time nor disk:
+
+```bash
+cp -Rc ../blast-unity /tmp/bu && \
+/Applications/Unity/Hub/Editor/6000.3.5f1/Unity.app/Contents/MacOS/Unity \
+  -batchmode -runTests -projectPath /tmp/bu -testPlatform EditMode \
+  -testResults /tmp/results.xml -logFile /tmp/unity.log
+```
+
+A green EditMode run is **59 passing, 2 skipped** (the two `ExportDiagnosticsTests` timing tests are `[Explicit]`). Results go to the XML file, not stdout.
 
 ### Library layout
 
 Each `blast/cmake/NvBlast*.cmake` file defines exactly one shared library; `blast/CMakeLists.txt` includes them. Note `NvBlastExtPhysX.cmake` exists but is deliberately **not** included — the PhysX-dependent extension is not built, which is why collision hull generation is supplied locally (see below).
 
-## Architecture: the Unity bridge
+## Architecture: the engine bridge
 
-The layer being developed is `NvBlastExtUnity` — a flat `extern "C"` surface over Blast's authoring API, plus a matching C# P/Invoke layer.
+The layer being developed is `NvBlastExtBridge` — a flat `extern "C"` surface over Blast's authoring API, plus a matching C# P/Invoke layer.
 
 ```
-Unity Editor (BlastAuthoringWindow / FractureWindow)
-  → FracturingAsset            orchestrates Create → Clear → Fracture → SpawnGameObjects
-      → NativeMeshBuilder      Unity Mesh  → native Nv::Blast::Mesh*
-      → NvBlastExtUnity.cs     [DllImport("NvBlastExtUnity")]
+Unity Editor (BlastAuthoringWindow)
+  → FractureSession.cs          holds one session for the life of the window
+      → NativeMeshBuilder       Unity Mesh  → native Nv::Blast::Mesh*
+      → NvBlastExtBridgeSession.cs / NvBlastExtBridge.cs   [DllImport("NvBlastExtBridge")]
           ══════════ P/Invoke boundary ══════════
-      → NvBlastExtUnity.cpp    C-API; one-shot wrapper over a throwaway session
-          → FractureSession    owns the FractureTool + RNG; per-chunk fracture ops
+      → NvBlastExtBridgeSession.cpp  C-API over the session
+          → FractureSession     owns the FractureTool + RNG; per-chunk fracture ops
           → NvBlastExtAuthoringProcessFracture → AuthoringResult
-      → FractureResultProcessor AuthoringResult → List<UnityEngine.Mesh>, then frees everything
+      → FractureResultProcessor.ToUnityMesh   native Mesh* → UnityEngine.Mesh
 ```
 
-For interactive authoring the C# side should hold a session directly rather than call the one-shot
-path — see "The authoring session" below. The one-shot call re-fractures from the source mesh every
-time, so it cannot subdivide or undo.
+There is one fracture path and it is the session: the caller creates a session, sets source meshes,
+fractures chunks by ID, and finalizes. An earlier one-shot API built a tool, fractured and destroyed
+it inside a single call — it could not subdivide, undo or preview, and it is gone.
 
-Key files: [blast/include/extensions/unity/NvBlastExtUnity.h](blast/include/extensions/unity/NvBlastExtUnity.h) (the contract), [blast/source/sdk/extensions/unity/NvBlastExtUnity.cpp](blast/source/sdk/extensions/unity/NvBlastExtUnity.cpp), and their C# mirrors in `blast-unity/Packages/com.pavlo-supenko.unity-blaster/Runtime/Extensions/Unity/`.
+Key files: [blast/include/extensions/bridge/NvBlastExtBridgeSession.h](blast/include/extensions/bridge/NvBlastExtBridgeSession.h) (the fracture contract) and [NvBlastExtBridge.h](blast/include/extensions/bridge/NvBlastExtBridge.h) (mesh construction, collision builder, asset serialization — what a caller needs either side of a session), their implementations under [blast/source/sdk/extensions/bridge/](blast/source/sdk/extensions/bridge/), and their C# mirrors in `blast-unity/Packages/com.pavlo-supenko.unity-blaster/Runtime/Extensions/Unity/`.
 
 ### The authoring session
 
-`FractureSession` ([blast/source/sdk/extensions/unity/FractureSession.h](blast/source/sdk/extensions/unity/FractureSession.h)), exposed over C as [NvBlastExtUnitySession.h](blast/include/extensions/unity/NvBlastExtUnitySession.h), owns a `FractureTool` across many operations. This is the path an authoring tool uses: fracture a chunk, inspect it, undo it, subdivide a child, finalize for preview, keep editing.
+`FractureSession` ([blast/source/sdk/extensions/bridge/FractureSession.h](blast/source/sdk/extensions/bridge/FractureSession.h)), exposed over C as [NvBlastExtBridgeSession.h](blast/include/extensions/bridge/NvBlastExtBridgeSession.h), owns a `FractureTool` across many operations. This is the path an authoring tool uses: fracture a chunk, inspect it, undo it, subdivide a child, finalize for preview, keep editing.
 
 Two rules matter when extending it:
 
 - **Chunks are addressed by chunk ID, never by info index.** IDs are stable; `getChunkInfoIndex` converts at the boundary. Info indices shift whenever chunks are added or removed, so handing one to C# guarantees a stale-reference bug.
-- **Booleans cross the ABI as `NvBlastExtUnityBool` (`uint32_t`).** C++ `bool` is 1 byte and C# `bool` marshals as a 4-byte `BOOL`; the mismatch is silent.
+- **Booleans cross the ABI as `NvBlastExtBridgeBool` (`uint32_t`).** C++ `bool` is 1 byte and C# `bool` marshals as a 4-byte `BOOL`; the mismatch is silent.
 
 The generator is re-seeded before every operation, so a fracture depends only on its seed and parameters, never on how many operations preceded it. That is what makes a stored seed reproduce an asset — and what the authoring recipe on the Unity side is built on.
 
@@ -106,27 +128,23 @@ Which chunks are support chunks follows the depth rule passed to Finalize. What 
 
 Chunks can be marked static; Finalize gives each one a bond to the external body via `NvBlastExtAssetUtilsAddExternalBonds`. Marks are held as **chunk IDs** and translated through `assetToFractureChunkIdMap` at finalize time, because finalizing reorders chunks and the asset's indices do not match the session's IDs.
 
-Only support chunks can carry an external bond. A chunk marked static that the depth rule did not make support is reported and skipped — `NvBlastExtUnitySessionIsChunkSupport` mirrors the rule so a tool can check first.
+Only support chunks can carry an external bond. A chunk marked static that the depth rule did not make support is reported and skipped — `NvBlastExtBridgeSessionIsChunkSupport` mirrors the rule so a tool can check first.
 
 Arbitrary per-chunk support overrides are deliberately absent: changing which chunks are upper-support changes the chunk ordering `NvBlastCreateAsset` requires, so honouring them means duplicating the whole `ProcessFracture` pipeline rather than post-processing its result.
 
 ### Asset serialization
 
-The `NvBlastAsset` is freed with its `AuthoringResult`, so without serializing it the entire authoring outcome is discarded moments after being produced. `NvBlastExtUnitySerializeAsset` / `DeserializeAsset` / `ReleaseSerializedAsset` in [NvBlastExtUnity.h](blast/include/extensions/unity/NvBlastExtUnity.h) copy it out; this is what the runtime will load.
+The `NvBlastAsset` is freed with its `AuthoringResult`, so without serializing it the entire authoring outcome is discarded moments after being produced. `NvBlastExtBridgeSerializeAsset` / `DeserializeAsset` / `ReleaseSerializedAsset` in [NvBlastExtBridge.h](blast/include/extensions/bridge/NvBlastExtBridge.h) copy it out; this is what the runtime will load.
 
 The serialization manager is created per process, never released. `NvBlastExtLlSerializerLoadSet` also registers the family codecs, which need the Tk framework this extension does not build — those two fail and log once. That complaint is noise, but it once mattered: it was the message that exposed a use-after-free in the test harness (see below).
 
-### The `Fracturer` descriptor
+### Adding a fracture algorithm
 
-`Nv::Blast::Fracturer` ([blast/include/extensions/unity/NvBlastFracturer.h](blast/include/extensions/unity/NvBlastFracturer.h)) is a project-specific type, not upstream Blast. It records *which* operation to run and with what settings; `FractureSession::applyFracturer` performs it. It used to be an abstract strategy that drove a `FractureTool` passed as an argument — that shape only fits the one-shot pipeline and cannot target a session's long-lived tool.
-
-`NvBlastExtUnityFractureMeshes` is now a thin convenience wrapper that drives a throwaway session, so both APIs share one implementation.
-
-Adding a new algorithm means touching, in order:
-1. `blast/include/extensions/unity/NvBlastExtUnityConfigs.h` — its config struct, if it needs one that Blast's authoring headers don't already provide (`SlicingConfiguration` and friends come from `NvBlastExtAuthoringFractureTool.h`).
-2. `FractureSession.h` / `.cpp` — a `fracture<Name>` method plus a `Fracturer::Type` case in `applyFracturer`.
-3. `NvBlastExtUnitySession.h` / `.cpp` — the session entry point; and `NvBlastExtUnity.h` / `.cpp` for a `NvBlastExtUnityCreate<Name>Fracturer` factory if the one-shot path should offer it too.
-4. C# `DllImport`s, a config `struct` under `Runtime/Extensions/Unity/Configs/`, and a `FractureType` enum entry.
+Touch these in order:
+1. `blast/include/extensions/bridge/NvBlastExtBridgeConfigs.h` — its config struct, if it needs one that Blast's authoring headers don't already provide (`SlicingConfiguration` and friends come from `NvBlastExtAuthoringFractureTool.h`). A config with more than a couple of fields, or one carrying a bitmap, belongs in `NvBlastExtBridgeSession.h` next to `NvBlastExtBridgeCutoutConfiguration` instead — that file is where the flattened-for-ABI parameter sets live.
+2. `FractureSession.h` / `.cpp` — a `fracture<Name>` method.
+3. `NvBlastExtBridgeSession.h` / `.cpp` — the session entry point.
+4. C# `DllImport`s, a config `struct` under `Runtime/Extensions/Unity/Configs/` or `Session/`, and a `FractureType` enum entry.
 5. `Editor/Windows/BlastAuthoringWindow.cs` — the settings GUI case, and a `RecordFractureStep` case so the operation lands in the authoring recipe.
 
 Tests live in [blast/source/test/src/unit/FractureSessionTests.cpp](blast/source/test/src/unit/FractureSessionTests.cpp) and exercise the C API rather than the C++ class, because the C API is the contract engine integrations bind to.
@@ -137,14 +155,14 @@ Config structs cross the boundary **by value**. The C# side must be `[StructLayo
 
 The bridge hands raw pointers to C#, so ownership rules are conventions, not enforced. Getting them wrong crashes the Editor. The current contract:
 
-- `NvBlastExtUnityCleanMesh` **releases the mesh it is given** and returns a new one. The C# side calls `NativeMeshHandle.DetachPointer()` before the call so the old handle never double-releases.
-- `NvBlastExtUnityCreateMeshes` returns a `Mesh**`. Release each `Mesh*` individually, *then* `NvBlastExtUnityReleaseMeshesArray` for the array itself.
-- The `ConvexMeshBuilder` must outlive the `AuthoringResult` — call `NvBlastExtUnityReleaseAuthoringResult(builder, result)` first, `NvBlastExtUnityReleaseCollisionBuilder(builder)` second. Builder creation/release was deliberately split out of the fracture call so the Unity side controls this ordering.
-- C# wrappers (`NativeMeshHandle`, `SafePointer`, `IFracturer`) are `IDisposable` with finalizers; `NativeMeshCache` keeps extracted source meshes alive across repeated fractures and is disposed when the Editor window closes.
+- `NvBlastExtBridgeCleanMesh` **releases the mesh it is given** and returns a new one. The C# side calls `NativeMeshHandle.DetachPointer()` before the call so the old handle never double-releases.
+- `NvBlastExtBridgeCreateMeshes` returns a `Mesh**`. Release each `Mesh*` individually, *then* `NvBlastExtBridgeReleaseMeshesArray` for the array itself.
+- The `ConvexMeshBuilder` must outlive the `AuthoringResult` — call `NvBlastExtBridgeReleaseAuthoringResult(builder, result)` first, `NvBlastExtBridgeReleaseCollisionBuilder(builder)` second. Builder creation/release was deliberately split out of the fracture call so the Unity side controls this ordering.
+- C# wrappers (`NativeMeshHandle`, `SafePointer`, `FractureSession`) are `IDisposable` with finalizers. The session owns the native session handle and is disposed when the Editor window closes.
 
 ### `ConvexHullMeshBuilder`
 
-Blast's own `ConvexMeshBuilder` lives in `NvBlastExtPhysX`, which this project doesn't build, so [blast/source/sdk/extensions/unity/ConvexHullMeshBuilder.cpp](blast/source/sdk/extensions/unity/ConvexHullMeshBuilder.cpp) supplies a replacement with no PhysX dependency. It computes real hulls with `btConvexHullComputer` — the quickhull already compiled into `NvBlastExtAuthoring` as part of V-HACD, so it costs no new dependency, only the `VHACD/inc` include path in [cmake/NvBlastExtUnity.cmake](blast/cmake/NvBlastExtUnity.cmake).
+Blast's own `ConvexMeshBuilder` lives in `NvBlastExtPhysX`, which this project doesn't build, so [blast/source/sdk/extensions/bridge/ConvexHullMeshBuilder.cpp](blast/source/sdk/extensions/bridge/ConvexHullMeshBuilder.cpp) supplies a replacement with no PhysX dependency. It computes real hulls with `btConvexHullComputer` — the quickhull already compiled into `NvBlastExtAuthoring` as part of V-HACD, so it costs no new dependency, only the `VHACD/inc` include path in [cmake/NvBlastExtBridge.cmake](blast/cmake/NvBlastExtBridge.cmake).
 
 Two details worth keeping in mind when touching it:
 
@@ -173,5 +191,5 @@ Two asset types come out of it, in [Runtime/Assets/](../blast-unity/Packages/com
 ## Conventions
 
 - C++14, 4-space indent, NVIDIA `Nv`/`NvBlast` naming. Use the `NVBLASTLL_LOG_DEBUG/ERROR(logFn, …)` macros with the `NvBlastLog` callback passed in from C# rather than `printf` — that callback routes into the Unity console via `BlastLogger`.
-- Every exported function is prefixed `NvBlastExtUnity` and declared `NV_C_API`; the C# `DllName` is `"NvBlastExtUnity"` (Unity resolves the platform prefix/extension).
+- Every exported function is prefixed `NvBlastExtBridge` and declared `NV_C_API`; the C# `DllName` is `"NvBlastExtBridge"` (Unity resolves the platform prefix/extension).
 - The `develop` branch is the integration branch; feature branches use `feature/unity/<topic>`. `main` tracks upstream.

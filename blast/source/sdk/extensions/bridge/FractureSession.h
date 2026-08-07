@@ -1,8 +1,9 @@
 #ifndef FRACTURESESSION_H
 #define FRACTURESESSION_H
 
-#include "NvBlastExtUnitySession.h"
-#include "NvBlastFracturer.h"
+#include "NvBlastExtBridgeSession.h"
+#include "NvBlastExtAuthoringFractureTool.h"
+#include "NvBlastExtBridgeConfigs.h"
 #include "SimpleRandomGenerator.h"
 
 #include <unordered_set>
@@ -15,7 +16,7 @@ namespace Blast
 
 /**
     Owns a FractureTool across many operations so a tool can fracture, inspect, undo and re-fracture
-    individual chunks. See NvBlastExtUnitySession.h for the contract this implements; this class is
+    individual chunks. See NvBlastExtBridgeSession.h for the contract this implements; this class is
     the C++ side of it and is not part of the public ABI.
 
     Every method addresses chunks by ID and validates them, so an out-of-date ID from a UI returns a
@@ -57,14 +58,8 @@ public:
     int32_t fractureSlicing(int32_t chunkId, const SlicingConfiguration& config, bool replaceChunk);
     int32_t fractureCut(int32_t chunkId, const NvcVec3& normal, const NvcVec3& point, const NoiseConfiguration& noise,
                         bool replaceChunk);
-    int32_t fractureCutout(int32_t chunkId, const NvBlastExtUnityCutoutConfiguration& config, bool replaceChunk);
+    int32_t fractureCutout(int32_t chunkId, const NvBlastExtBridgeCutoutConfiguration& config, bool replaceChunk);
     int32_t detectIslands(int32_t chunkId, bool createAtNewDepth);
-
-    /**
-        Dispatches a Fracturer descriptor to the matching operation above. This is what lets the
-        one-shot API keep its Fracturer-based signatures while running through a session.
-    */
-    int32_t applyFracturer(int32_t chunkId, const Fracturer& fracturer, bool replaceChunk);
 
     // ─── Queries ──────────────────────────────────────────────────────────────
 
@@ -72,7 +67,7 @@ public:
     uint32_t getChunkIds(int32_t* outIds, uint32_t maxIds) const;
     uint32_t getChunkIdsAtDepth(uint32_t depth, int32_t* outIds, uint32_t maxIds) const;
     uint32_t getChildChunkIds(int32_t chunkId, int32_t* outIds, uint32_t maxIds) const;
-    int32_t  getChunkInfo(int32_t chunkId, NvBlastExtUnityChunkInfo* outInfo) const;
+    int32_t  getChunkInfo(int32_t chunkId, NvBlastExtBridgeChunkInfo* outInfo) const;
     int32_t  getChunkDepth(int32_t chunkId) const;
 
     // ─── Geometry ─────────────────────────────────────────────────────────────

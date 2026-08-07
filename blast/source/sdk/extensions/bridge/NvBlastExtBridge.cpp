@@ -2,76 +2,73 @@
 #include "NvBlastExtAuthoringFractureTool.h"
 #include "NvBlastExtAuthoringBondGenerator.h"
 #include "NvBlastExtAuthoring.h"
-#include "NvBlastExtUnity.h"
+#include "NvBlastExtBridge.h"
 #include "NvBlastPreprocessorInternal.h"
 #include "ConvexHullMeshBuilder.h"
-#include "FractureSession.h"
 #include "NvBlastExtSerialization.h"
 #include "NvBlastExtLlSerialization.h"
 #include "NvBlastGlobals.h"
-
-#include <sstream>
 
 using namespace Nv::Blast;
 
 // ─── Mesh creation and release ────────────────────────────────────────────────
 
-Mesh* NvBlastExtUnityCreateMesh(const NvcVec3* position, const NvcVec3* normals, const NvcVec2* uv,
+Mesh* NvBlastExtBridgeCreateMesh(const NvcVec3* position, const NvcVec3* normals, const NvcVec2* uv,
     uint32_t verticesCount, const uint32_t* triangleIndices, uint32_t indicesCount)
 {
     return NvBlastExtAuthoringCreateMesh(position, normals, uv, verticesCount, triangleIndices, indicesCount);
 }
 
-void NvBlastExtUnityReleaseMesh(Mesh* mesh)
+void NvBlastExtBridgeReleaseMesh(Mesh* mesh)
 {
     if (mesh) mesh->release();
 }
 
-void NvBlastExtUnitySetMaterialId(Mesh* mesh, const int32_t* materialIds)
+void NvBlastExtBridgeSetMaterialId(Mesh* mesh, const int32_t* materialIds)
 {
     mesh->setMaterialId(materialIds);
 }
 
-void NvBlastExtUnitySetSmoothingGroup(Mesh* mesh, const int32_t* smoothingGroups)
+void NvBlastExtBridgeSetSmoothingGroup(Mesh* mesh, const int32_t* smoothingGroups)
 {
     mesh->setSmoothingGroup(smoothingGroups);
 }
 
 // ─── Mesh data accessors ──────────────────────────────────────────────────────
 
-uint32_t NvBlastExtUnityGetVerticesCount(const Mesh* mesh)
+uint32_t NvBlastExtBridgeGetVerticesCount(const Mesh* mesh)
 {
     return mesh->getVerticesCount();
 }
 
-const Vertex* NvBlastExtUnityGetVertices(const Mesh* mesh)
+const Vertex* NvBlastExtBridgeGetVertices(const Mesh* mesh)
 {
     return mesh->getVertices();
 }
 
-uint32_t NvBlastExtUnityGetFacetCount(const Mesh* mesh)
+uint32_t NvBlastExtBridgeGetFacetCount(const Mesh* mesh)
 {
     return mesh->getFacetCount();
 }
 
-const Facet* NvBlastExtUnityGetFacets(const Mesh* mesh)
+const Facet* NvBlastExtBridgeGetFacets(const Mesh* mesh)
 {
     return mesh->getFacetsBuffer();
 }
 
-uint32_t NvBlastExtUnityGetEdgesCount(const Mesh* mesh)
+uint32_t NvBlastExtBridgeGetEdgesCount(const Mesh* mesh)
 {
     return mesh->getEdgesCount();
 }
 
-const Edge* NvBlastExtUnityGetEdges(const Mesh* mesh)
+const Edge* NvBlastExtBridgeGetEdges(const Mesh* mesh)
 {
     return mesh->getEdges();
 }
 
 // ─── Mesh cleaning ────────────────────────────────────────────────────────────
 
-Mesh* NvBlastExtUnityCleanMesh(Mesh* mesh,
+Mesh* NvBlastExtBridgeCleanMesh(Mesh* mesh,
     NvBlastLog logFn, NvBlastLogProgress logPrgrsFn,
     NvBlastLogProgressStart logPrgrsStartFn, NvBlastLogProgressEnd logPrgrsEndFn)
 {
@@ -86,71 +83,14 @@ Mesh* NvBlastExtUnityCleanMesh(Mesh* mesh,
     return cleanedMesh;
 }
 
-// ─── Fracturers ───────────────────────────────────────────────────────────────
-//
-// A Fracturer is a descriptor: it records which operation to run and with what settings, and the
-// session performs it. See NvBlastFracturer.h.
-
-Fracturer* NvBlastExtUnityCreateVoronoiFracturer(VoronoiConfiguration settings)
-{
-    Fracturer* fracturer = new Fracturer();
-    fracturer->type      = Fracturer::Voronoi;
-    fracturer->voronoi   = settings;
-    return fracturer;
-}
-
-Fracturer* NvBlastExtUnityCreateClusteredVoronoiFracturer(ClusteredVoronoiConfiguration settings)
-{
-    Fracturer* fracturer        = new Fracturer();
-    fracturer->type             = Fracturer::ClusteredVoronoi;
-    fracturer->clusteredVoronoi = settings;
-    return fracturer;
-}
-
-Fracturer* NvBlastExtUnityCreateSlicingFracturer(SlicingConfiguration settings)
-{
-    Fracturer* fracturer = new Fracturer();
-    fracturer->type      = Fracturer::Slicing;
-    fracturer->slicing   = settings;
-    return fracturer;
-}
-
-Fracturer* NvBlastExtUnityCreateIslandsFracturer()
-{
-    Fracturer* fracturer = new Fracturer();
-    fracturer->type      = Fracturer::Islands;
-    return fracturer;
-}
-
-Fracturer* NvBlastExtUnityCreatePlaneCutFracturer(PlaneCutConfiguration settings)
-{
-    Fracturer* fracturer = new Fracturer();
-    fracturer->type      = Fracturer::PlaneCut;
-    fracturer->planeCut  = settings;
-    return fracturer;
-}
-
-Fracturer* NvBlastExtUnityCreateCutOutFracturer(CutOutConfiguration settings)
-{
-    Fracturer* fracturer = new Fracturer();
-    fracturer->type      = Fracturer::CutOut;
-    fracturer->cutOut    = settings;
-    return fracturer;
-}
-
-void NvBlastExtUnityReleaseFracturer(Fracturer* fracturer)
-{
-    delete fracturer;
-}
-
 // ─── Collision builder ────────────────────────────────────────────────────────
 
-ConvexMeshBuilder* NvBlastExtUnityCreateCollisionBuilder()
+ConvexMeshBuilder* NvBlastExtBridgeCreateCollisionBuilder()
 {
     return new ConvexHullMeshBuilder();
 }
 
-void NvBlastExtUnityReleaseCollisionBuilder(ConvexMeshBuilder* builder)
+void NvBlastExtBridgeReleaseCollisionBuilder(ConvexMeshBuilder* builder)
 {
     if (builder) builder->release();
 }
@@ -194,7 +134,7 @@ ExtSerialization& serializationManager()
 
 }  // namespace
 
-uint32_t NvBlastExtUnitySerializeAsset(const NvBlastAsset* asset, void** outBuffer)
+uint32_t NvBlastExtBridgeSerializeAsset(const NvBlastAsset* asset, void** outBuffer)
 {
     if (asset == nullptr || outBuffer == nullptr)
     {
@@ -215,7 +155,7 @@ uint32_t NvBlastExtUnitySerializeAsset(const NvBlastAsset* asset, void** outBuff
     return static_cast<uint32_t>(size);
 }
 
-void NvBlastExtUnityReleaseSerializedAsset(void* buffer)
+void NvBlastExtBridgeReleaseSerializedAsset(void* buffer)
 {
     if (buffer != nullptr)
     {
@@ -223,7 +163,7 @@ void NvBlastExtUnityReleaseSerializedAsset(void* buffer)
     }
 }
 
-NvBlastAsset* NvBlastExtUnityDeserializeAsset(const void* buffer, uint32_t size)
+NvBlastAsset* NvBlastExtBridgeDeserializeAsset(const void* buffer, uint32_t size)
 {
     if (buffer == nullptr || size == 0)
     {
@@ -233,7 +173,7 @@ NvBlastAsset* NvBlastExtUnityDeserializeAsset(const void* buffer, uint32_t size)
     return reinterpret_cast<NvBlastAsset*>(serializationManager().deserializeFromBuffer(buffer, size));
 }
 
-void NvBlastExtUnityReleaseAsset(NvBlastAsset* asset)
+void NvBlastExtBridgeReleaseAsset(NvBlastAsset* asset)
 {
     if (asset != nullptr)
     {
@@ -241,80 +181,19 @@ void NvBlastExtUnityReleaseAsset(NvBlastAsset* asset)
     }
 }
 
-const NvBlastAsset* NvBlastExtUnityGetAsset(const AuthoringResult& aResult)
+const NvBlastAsset* NvBlastExtBridgeGetAsset(const AuthoringResult& aResult)
 {
     return aResult.asset;
 }
 
-// ─── Fracture pipeline ────────────────────────────────────────────────────────
-
-AuthoringResult* NvBlastExtUnityFractureMesh(Mesh* mesh, uint32_t aggregateMaxCount,
-    Fracturer* fracturer, ConvexMeshBuilder* collisionBuilder, NvBlastLog logFn)
-{
-    Mesh* meshes[] = { mesh };
-    int32_t ids[]  = { 0 };
-    return NvBlastExtUnityFractureMeshes(meshes, 1, ids, aggregateMaxCount, fracturer, collisionBuilder, logFn);
-}
-
-AuthoringResult* NvBlastExtUnityFractureMeshes(Mesh** meshes, uint32_t meshesSize, const int32_t* ids,
-    uint32_t aggregateMaxCount, Fracturer* fracturer, ConvexMeshBuilder* collisionBuilder, NvBlastLog logFn)
-{
-    // This is the one-shot convenience path: it drives a throwaway session so both APIs share one
-    // implementation. Callers that need to keep fracturing — subdividing chunks, undoing, previewing
-    // — should own a session directly, see NvBlastExtUnitySession.h.
-    if (fracturer == nullptr)
-    {
-        NVBLASTLL_LOG_ERROR(logFn, "Fracture: no fracturer supplied");
-        return nullptr;
-    }
-
-    {
-        std::ostringstream oss;
-        oss << "Fracturing " << meshesSize << " mesh(es)...";
-        NVBLASTLL_LOG_DEBUG(logFn, oss.str().c_str());
-    }
-
-    FractureSession session(logFn);
-    if (!session.isValid())
-    {
-        return nullptr;
-    }
-
-    if (session.setSourceMeshes(meshes, meshesSize, ids) != NvBlastExtUnitySessionResult_Success)
-    {
-        return nullptr;
-    }
-    NVBLASTLL_LOG_DEBUG(logFn, "Source meshes assigned to the session");
-
-    for (uint32_t i = 0; i < meshesSize; ++i)
-    {
-        // Each source mesh became a root chunk under its own ID; fracture each one in turn.
-        const int32_t chunkId = ids != nullptr ? ids[i] : static_cast<int32_t>(i);
-
-        if (session.applyFracturer(chunkId, *fracturer, false) != NvBlastExtUnitySessionResult_Success)
-        {
-            std::ostringstream oss;
-            oss << "Fracture: failed on chunk " << chunkId;
-            NVBLASTLL_LOG_ERROR(logFn, oss.str().c_str());
-            return nullptr;
-        }
-    }
-
-    NVBLASTLL_LOG_DEBUG(logFn, "Finalizing...");
-    AuthoringResult* result = session.finalize(collisionBuilder, aggregateMaxCount, -1);
-
-    NVBLASTLL_LOG_DEBUG(logFn, "Fracture complete");
-    return result;
-}
-
 // ─── Authoring result helpers ─────────────────────────────────────────────────
 
-uint32_t NvBlastExtUnityGetFractureChunksCount(const AuthoringResult& aResult)
+uint32_t NvBlastExtBridgeGetFractureChunksCount(const AuthoringResult& aResult)
 {
     return aResult.chunkCount;
 }
 
-Mesh** NvBlastExtUnityCreateMeshes(const AuthoringResult& aResult)
+Mesh** NvBlastExtBridgeCreateMeshes(const AuthoringResult& aResult)
 {
     if (aResult.chunkCount == 0) return nullptr;
 
@@ -363,14 +242,14 @@ Mesh** NvBlastExtUnityCreateMeshes(const AuthoringResult& aResult)
     return meshes;
 }
 
-void NvBlastExtUnityReleaseMeshesArray(Mesh** meshes)
+void NvBlastExtBridgeReleaseMeshesArray(Mesh** meshes)
 {
     // Releases only the pointer array itself.
-    // Each individual Mesh* must already have been released via NvBlastExtUnityReleaseMesh.
+    // Each individual Mesh* must already have been released via NvBlastExtBridgeReleaseMesh.
     delete[] meshes;
 }
 
-void NvBlastExtUnityReleaseAuthoringResult(ConvexMeshBuilder& collisionBuilder, AuthoringResult* ar)
+void NvBlastExtBridgeReleaseAuthoringResult(ConvexMeshBuilder& collisionBuilder, AuthoringResult* ar)
 {
     NvBlastExtAuthoringReleaseAuthoringResult(collisionBuilder, ar);
 }

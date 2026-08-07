@@ -42,7 +42,7 @@ set(TESTS_INCLUDES
     ${PROJECT_SOURCE_DIR}/include/extensions/serialization
     ${PROJECT_SOURCE_DIR}/include/extensions/authoring
     ${PROJECT_SOURCE_DIR}/include/extensions/authoringCommon
-    ${PROJECT_SOURCE_DIR}/include/extensions/unity
+    ${PROJECT_SOURCE_DIR}/include/extensions/bridge
     ${PROJECT_SOURCE_DIR}/source/sdk/common
     ${PROJECT_SOURCE_DIR}/source/sdk/globals
     ${PROJECT_SOURCE_DIR}/source/sdk/lowlevel
@@ -75,7 +75,7 @@ target_link_libraries(UnitTests
     NvBlastExtSerialization
     NvBlastExtTkSerialization
     NvBlastExtAuthoring
-    NvBlastExtUnity
+    NvBlastExtBridge
 
     GTest::gtest_main
 )

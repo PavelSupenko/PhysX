@@ -239,7 +239,12 @@ public:
 
     void createTestAssets(bool addInternalJoints = false)
     {
-        const uint8_t cube1BondDescFlags_internalJoints[12] =
+        // One flag per bond, and the same array is handed to every asset in g_assetDescs — so it
+        // has to cover the longest of them. The world-bound descriptors carry 16 bonds while the
+        // plain ones carry 12; sized at 12 this read four entries off the end of the stack for
+        // half the assets, and whichever joints that produced were down to whatever happened to
+        // be there. The trailing four are the world bonds, which are not jointed.
+        const uint8_t cube1BondDescFlags_internalJoints[16] =
         {
             TkAssetDesc::NoFlags,
             TkAssetDesc::NoFlags,
@@ -254,7 +259,12 @@ public:
             TkAssetDesc::BondJointed,
             TkAssetDesc::BondJointed,
             TkAssetDesc::BondJointed,
-            TkAssetDesc::BondJointed
+            TkAssetDesc::BondJointed,
+
+            TkAssetDesc::NoFlags,
+            TkAssetDesc::NoFlags,
+            TkAssetDesc::NoFlags,
+            TkAssetDesc::NoFlags
         };
 
         const uint32_t assetDescCount = sizeof(g_assetDescs) / sizeof(g_assetDescs[0]);
