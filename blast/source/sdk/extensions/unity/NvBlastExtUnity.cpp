@@ -4,7 +4,7 @@
 #include "NvBlastExtAuthoring.h"
 #include "NvBlastExtUnity.h"
 #include "NvBlastPreprocessorInternal.h"
-#include "BoundingBoxConvexMeshBuilder.h"
+#include "ConvexHullMeshBuilder.h"
 #include "FractureSession.h"
 
 #include <sstream>
@@ -144,7 +144,7 @@ void NvBlastExtUnityReleaseFracturer(Fracturer* fracturer)
 
 ConvexMeshBuilder* NvBlastExtUnityCreateCollisionBuilder()
 {
-    return new BoundingBoxConvexMeshBuilder();
+    return new ConvexHullMeshBuilder();
 }
 
 void NvBlastExtUnityReleaseCollisionBuilder(ConvexMeshBuilder* builder)

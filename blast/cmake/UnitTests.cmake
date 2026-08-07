@@ -24,6 +24,7 @@ set(TESTS_SOURCE
     ${PROJECT_SOURCE_DIR}/source/test/src/unit/AssetTests.cpp
     ${PROJECT_SOURCE_DIR}/source/test/src/unit/CoreTests.cpp
     ${PROJECT_SOURCE_DIR}/source/test/src/unit/FamilyGraphTests.cpp
+    ${PROJECT_SOURCE_DIR}/source/test/src/unit/ConvexHullTests.cpp
     ${PROJECT_SOURCE_DIR}/source/test/src/unit/FractureSessionTests.cpp
     ${PROJECT_SOURCE_DIR}/source/test/src/unit/MultithreadingTests.cpp
     ${PROJECT_SOURCE_DIR}/source/test/src/unit/TkCompositeTests.cpp
