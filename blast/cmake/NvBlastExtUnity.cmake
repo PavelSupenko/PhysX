@@ -32,6 +32,8 @@ target_link_libraries(NvBlastExtUnity
     NvBlast
     NvBlastGlobals
     NvBlastExtAuthoring
+    # NvBlastExtAssetUtilsAddExternalBonds — anchors static chunks to the world at finalize time.
+    NvBlastExtAssetUtils
 )
 
 target_compile_definitions(NvBlastExtUnity PRIVATE 

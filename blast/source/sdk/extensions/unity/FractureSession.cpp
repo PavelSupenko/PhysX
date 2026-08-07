@@ -2,7 +2,9 @@
 
 #include "NvBlastExtAuthoringBondGenerator.h"
 #include "NvBlastExtAuthoringCutout.h"
+#include "NvBlastExtAssetUtils.h"
 #include "NvBlastPreprocessorInternal.h"
+#include "NvBlastGlobals.h"
 
 #include <cmath>
 #include <sstream>
@@ -51,7 +53,10 @@ NvcQuat quatFromZToNormal(const NvcVec3& normal)
 // ─── Lifetime ─────────────────────────────────────────────────────────────────
 
 FractureSession::FractureSession(NvBlastLog logFn)
-    : mTool(NvBlastExtAuthoringCreateFractureTool()), mSeed(0), mLogFn(logFn)
+    : mTool(NvBlastExtAuthoringCreateFractureTool())
+    , mSeed(0)
+    , mLogFn(logFn)
+    , mWorldBondDirection({ 0.0f, -1.0f, 0.0f })  // Held from below, the usual case
 {
     if (mTool == nullptr)
     {
@@ -708,6 +713,144 @@ void FractureSession::fitAllUvToRect(float side)
     }
 }
 
+// ─── Support graph ────────────────────────────────────────────────────────────
+
+int32_t FractureSession::setChunkStatic(int32_t chunkId, bool isStatic)
+{
+    if (mTool == nullptr)
+    {
+        return NvBlastExtUnitySessionResult_InvalidSession;
+    }
+    if (mTool->getChunkInfoIndex(chunkId) < 0)
+    {
+        return NvBlastExtUnitySessionResult_InvalidChunk;
+    }
+
+    if (isStatic)
+    {
+        mStaticChunks.insert(chunkId);
+    }
+    else
+    {
+        mStaticChunks.erase(chunkId);
+    }
+
+    return NvBlastExtUnitySessionResult_Success;
+}
+
+bool FractureSession::getChunkStatic(int32_t chunkId) const
+{
+    return mStaticChunks.find(chunkId) != mStaticChunks.end();
+}
+
+uint32_t FractureSession::getStaticChunkIds(int32_t* outIds, uint32_t maxIds) const
+{
+    if (outIds != nullptr)
+    {
+        uint32_t written = 0;
+        for (int32_t chunkId : mStaticChunks)
+        {
+            if (written >= maxIds)
+            {
+                break;
+            }
+            outIds[written++] = chunkId;
+        }
+    }
+
+    return static_cast<uint32_t>(mStaticChunks.size());
+}
+
+void FractureSession::clearStaticChunks()
+{
+    mStaticChunks.clear();
+}
+
+bool FractureSession::isChunkSupport(int32_t chunkId, int32_t defaultSupportDepth) const
+{
+    if (mTool == nullptr)
+    {
+        return false;
+    }
+
+    const int32_t infoIndex = mTool->getChunkInfoIndex(chunkId);
+    if (infoIndex < 0)
+    {
+        return false;
+    }
+
+    // Mirrors NvBlastExtAuthoringProcessFracture: above the requested depth every leaf is support,
+    // at the requested depth every chunk is.
+    const int32_t depth = mTool->getChunkDepth(chunkId);
+
+    if (defaultSupportDepth < 0 || depth < defaultSupportDepth)
+    {
+        return mTool->getChunkInfo(infoIndex).isLeaf;
+    }
+
+    return depth == defaultSupportDepth;
+}
+
+uint32_t FractureSession::applyWorldBonds(AuthoringResult& result)
+{
+    if (mStaticChunks.empty() || result.asset == nullptr)
+    {
+        return 0;
+    }
+
+    // Static marks are held as chunk IDs, but the asset addresses chunks by its own index, and the
+    // two differ because finalizing reorders chunks. assetToFractureChunkIdMap is that mapping.
+    std::vector<uint32_t> anchoredChunks;
+    anchoredChunks.reserve(mStaticChunks.size());
+
+    for (uint32_t assetIndex = 0; assetIndex < result.chunkCount; ++assetIndex)
+    {
+        const int32_t chunkId = static_cast<int32_t>(result.assetToFractureChunkIdMap[assetIndex]);
+
+        if (mStaticChunks.find(chunkId) == mStaticChunks.end())
+        {
+            continue;
+        }
+
+        // Only support chunks can carry an external bond; anything else is silently ignored by the
+        // asset builder, so report it instead of letting the anchor quietly go missing.
+        if ((result.chunkDescs[assetIndex].flags & NvBlastChunkDesc::SupportFlag) == 0)
+        {
+            std::ostringstream oss;
+            oss << "Finalize: chunk " << chunkId
+                << " is marked static but is not a support chunk, so it cannot be anchored";
+            NVBLASTLL_LOG_ERROR(mLogFn, oss.str().c_str());
+            continue;
+        }
+
+        anchoredChunks.push_back(assetIndex);
+    }
+
+    if (anchoredChunks.empty())
+    {
+        return 0;
+    }
+
+    std::vector<NvcVec3> directions(anchoredChunks.size(), mWorldBondDirection);
+
+    NvBlastAsset* anchored = NvBlastExtAssetUtilsAddExternalBonds(
+        result.asset, anchoredChunks.data(), static_cast<uint32_t>(anchoredChunks.size()),
+        directions.data(), nullptr);
+
+    if (anchored == nullptr)
+    {
+        NVBLASTLL_LOG_ERROR(mLogFn, "Finalize: failed to add world bonds; the asset is left unanchored");
+        return 0;
+    }
+
+    // AddExternalBonds returns a freshly allocated asset and leaves the original untouched, so the
+    // old one has to be released or it leaks for the lifetime of the result.
+    NVBLAST_FREE(result.asset);
+    result.asset = anchored;
+
+    return static_cast<uint32_t>(anchoredChunks.size());
+}
+
 // ─── Finalize ─────────────────────────────────────────────────────────────────
 
 AuthoringResult* FractureSession::finalize(ConvexMeshBuilder* collisionBuilder, uint32_t aggregateMaxCount,
@@ -746,6 +889,15 @@ AuthoringResult* FractureSession::finalize(ConvexMeshBuilder* collisionBuilder, 
     if (result == nullptr)
     {
         NVBLASTLL_LOG_ERROR(mLogFn, "Finalize: ProcessFracture returned no result");
+        return nullptr;
+    }
+
+    const uint32_t anchored = applyWorldBonds(*result);
+    if (anchored > 0)
+    {
+        std::ostringstream oss;
+        oss << "Finalize: anchored " << anchored << " chunk(s) to the world";
+        NVBLASTLL_LOG_DEBUG(mLogFn, oss.str().c_str());
     }
 
     return result;

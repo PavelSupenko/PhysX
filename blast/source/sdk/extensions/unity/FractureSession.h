@@ -5,6 +5,9 @@
 #include "NvBlastFracturer.h"
 #include "SimpleRandomGenerator.h"
 
+#include <unordered_set>
+#include <vector>
+
 namespace Nv
 {
 namespace Blast
@@ -85,6 +88,18 @@ public:
     int32_t fitUvToRect(int32_t chunkId, float side);
     void    fitAllUvToRect(float side);
 
+    // ─── Support graph ────────────────────────────────────────────────────────
+
+    int32_t  setChunkStatic(int32_t chunkId, bool isStatic);
+    bool     getChunkStatic(int32_t chunkId) const;
+    uint32_t getStaticChunkIds(int32_t* outIds, uint32_t maxIds) const;
+    void     clearStaticChunks();
+
+    /** Mirrors the rule finalize applies, so a tool can show the support layer before finalizing. */
+    bool isChunkSupport(int32_t chunkId, int32_t defaultSupportDepth) const;
+
+    void setWorldBondDirection(const NvcVec3& direction) { mWorldBondDirection = direction; }
+
     // ─── Finalize ─────────────────────────────────────────────────────────────
 
     AuthoringResult* finalize(ConvexMeshBuilder* collisionBuilder, uint32_t aggregateMaxCount,
@@ -116,10 +131,21 @@ private:
     /** Shared tail of the voronoi operations: hand the generated sites to the fracture tool. */
     int32_t applyVoronoiSites(int32_t chunkId, const NvcVec3* sites, uint32_t siteCount, bool replaceChunk);
 
+    /**
+        Rewrites the result's asset with world bonds on every static chunk that is actually a
+        support chunk. Returns the number of anchors applied.
+    */
+    uint32_t applyWorldBonds(AuthoringResult& result);
+
     FractureTool*         mTool;
     SimpleRandomGenerator mRng;
     int32_t               mSeed;
     NvBlastLog            mLogFn;
+
+    /** Chunk IDs the artist marked as anchored to the world. */
+    std::unordered_set<int32_t> mStaticChunks;
+
+    NvcVec3 mWorldBondDirection;
 };
 
 }  // namespace Blast

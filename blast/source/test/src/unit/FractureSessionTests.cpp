@@ -6,6 +6,7 @@
 
 #include "NvBlastExtUnity.h"
 #include "NvBlastExtUnitySession.h"
+#include "NvBlast.h"  // NvBlastAssetGetBondCount, to verify anchors reached the asset
 
 #include <gtest/gtest.h>
 
@@ -531,6 +532,161 @@ TEST_F(FractureSessionTest, FinalizeWithoutSourceMeshesFails)
     ConvexMeshBuilder* collisionBuilder = NvBlastExtUnityCreateCollisionBuilder();
     EXPECT_EQ(NvBlastExtUnitySessionFinalize(m_session, collisionBuilder, 1, -1), nullptr);
     NvBlastExtUnityReleaseCollisionBuilder(collisionBuilder);
+}
+
+// ─── Support graph ────────────────────────────────────────────────────────────
+
+TEST_F(FractureSessionTest, StaticMarkRoundTrips)
+{
+    setCubeSource();
+
+    SlicingConfiguration slicing;
+    ASSERT_EQ(NvBlastExtUnitySessionFractureSlicing(m_session, 0, slicing, 0),
+              NvBlastExtUnitySessionResult_Success);
+
+    const std::vector<int32_t> children = childrenOf(0);
+    ASSERT_FALSE(children.empty());
+
+    EXPECT_EQ(NvBlastExtUnitySessionGetChunkStatic(m_session, children.front()), 0u);
+    ASSERT_EQ(NvBlastExtUnitySessionSetChunkStatic(m_session, children.front(), 1),
+              NvBlastExtUnitySessionResult_Success);
+    EXPECT_NE(NvBlastExtUnitySessionGetChunkStatic(m_session, children.front()), 0u);
+
+    EXPECT_EQ(NvBlastExtUnitySessionGetStaticChunkIds(m_session, nullptr, 0), 1u);
+
+    ASSERT_EQ(NvBlastExtUnitySessionSetChunkStatic(m_session, children.front(), 0),
+              NvBlastExtUnitySessionResult_Success);
+    EXPECT_EQ(NvBlastExtUnitySessionGetStaticChunkIds(m_session, nullptr, 0), 0u);
+}
+
+TEST_F(FractureSessionTest, StaticMarkRejectsUnknownChunk)
+{
+    setCubeSource();
+    EXPECT_EQ(NvBlastExtUnitySessionSetChunkStatic(m_session, 999, 1),
+              NvBlastExtUnitySessionResult_InvalidChunk);
+}
+
+TEST_F(FractureSessionTest, ClearStaticChunksDropsEveryMark)
+{
+    setCubeSource();
+
+    SlicingConfiguration slicing;
+    ASSERT_EQ(NvBlastExtUnitySessionFractureSlicing(m_session, 0, slicing, 0),
+              NvBlastExtUnitySessionResult_Success);
+
+    for (int32_t chunkId : childrenOf(0))
+    {
+        ASSERT_EQ(NvBlastExtUnitySessionSetChunkStatic(m_session, chunkId, 1),
+                  NvBlastExtUnitySessionResult_Success);
+    }
+    ASSERT_GT(NvBlastExtUnitySessionGetStaticChunkIds(m_session, nullptr, 0), 0u);
+
+    NvBlastExtUnitySessionClearStaticChunks(m_session);
+    EXPECT_EQ(NvBlastExtUnitySessionGetStaticChunkIds(m_session, nullptr, 0), 0u);
+}
+
+TEST_F(FractureSessionTest, SupportPredictionMatchesTheDepthRule)
+{
+    setCubeSource();
+
+    SlicingConfiguration slicing;
+    ASSERT_EQ(NvBlastExtUnitySessionFractureSlicing(m_session, 0, slicing, 0),
+              NvBlastExtUnitySessionResult_Success);
+
+    // With -1 every leaf is support, so the children are and the root is not.
+    EXPECT_EQ(NvBlastExtUnitySessionIsChunkSupport(m_session, 0, -1), 0u);
+    for (int32_t chunkId : childrenOf(0))
+    {
+        EXPECT_NE(NvBlastExtUnitySessionIsChunkSupport(m_session, chunkId, -1), 0u);
+    }
+
+    // Pinning the depth to 0 moves the support layer up to the root.
+    EXPECT_NE(NvBlastExtUnitySessionIsChunkSupport(m_session, 0, 0), 0u);
+    for (int32_t chunkId : childrenOf(0))
+    {
+        EXPECT_EQ(NvBlastExtUnitySessionIsChunkSupport(m_session, chunkId, 0), 0u);
+    }
+}
+
+TEST_F(FractureSessionTest, AnchoringAddsExternalBondsToTheAsset)
+{
+    setCubeSource();
+
+    SlicingConfiguration slicing;
+    slicing.x_slices = 1;
+    slicing.y_slices = 1;
+    slicing.z_slices = 1;
+    ASSERT_EQ(NvBlastExtUnitySessionFractureSlicing(m_session, 0, slicing, 0),
+              NvBlastExtUnitySessionResult_Success);
+
+    ConvexMeshBuilder* collisionBuilder = NvBlastExtUnityCreateCollisionBuilder();
+    ASSERT_NE(collisionBuilder, nullptr);
+
+    AuthoringResult* plain = NvBlastExtUnitySessionFinalize(m_session, collisionBuilder, 1, -1);
+    ASSERT_NE(plain, nullptr);
+    const uint32_t bondsWithoutAnchors = NvBlastAssetGetBondCount(plain->asset, nullptr);
+    NvBlastExtUnityReleaseAuthoringResult(*collisionBuilder, plain);
+
+    // Anchor two of the leaves; each one adds a bond to the external body.
+    const std::vector<int32_t> children = childrenOf(0);
+    ASSERT_GE(children.size(), 2u);
+    ASSERT_EQ(NvBlastExtUnitySessionSetChunkStatic(m_session, children[0], 1),
+              NvBlastExtUnitySessionResult_Success);
+    ASSERT_EQ(NvBlastExtUnitySessionSetChunkStatic(m_session, children[1], 1),
+              NvBlastExtUnitySessionResult_Success);
+
+    AuthoringResult* anchored = NvBlastExtUnitySessionFinalize(m_session, collisionBuilder, 1, -1);
+    ASSERT_NE(anchored, nullptr);
+
+    EXPECT_EQ(NvBlastAssetGetBondCount(anchored->asset, nullptr), bondsWithoutAnchors + 2);
+
+    NvBlastExtUnityReleaseAuthoringResult(*collisionBuilder, anchored);
+    NvBlastExtUnityReleaseCollisionBuilder(collisionBuilder);
+}
+
+TEST_F(FractureSessionTest, AnchoringANonSupportChunkIsRefusedNotSilent)
+{
+    setCubeSource();
+
+    SlicingConfiguration slicing;
+    ASSERT_EQ(NvBlastExtUnitySessionFractureSlicing(m_session, 0, slicing, 0),
+              NvBlastExtUnitySessionResult_Success);
+
+    // The root is not a support chunk under the leaf rule, so anchoring it cannot work. Finalize
+    // must still succeed — the anchor is reported and skipped rather than failing the whole build.
+    ASSERT_EQ(NvBlastExtUnitySessionSetChunkStatic(m_session, 0, 1),
+              NvBlastExtUnitySessionResult_Success);
+
+    ConvexMeshBuilder* collisionBuilder = NvBlastExtUnityCreateCollisionBuilder();
+    AuthoringResult*   result           = NvBlastExtUnitySessionFinalize(m_session, collisionBuilder, 1, -1);
+
+    ASSERT_NE(result, nullptr);
+    EXPECT_GT(result->chunkCount, 1u);
+
+    NvBlastExtUnityReleaseAuthoringResult(*collisionBuilder, result);
+    NvBlastExtUnityReleaseCollisionBuilder(collisionBuilder);
+}
+
+TEST_F(FractureSessionTest, StaticMarksSurviveFurtherFracturing)
+{
+    setCubeSource();
+
+    SlicingConfiguration slicing;
+    ASSERT_EQ(NvBlastExtUnitySessionFractureSlicing(m_session, 0, slicing, 0),
+              NvBlastExtUnitySessionResult_Success);
+
+    const std::vector<int32_t> children = childrenOf(0);
+    ASSERT_GE(children.size(), 2u);
+
+    ASSERT_EQ(NvBlastExtUnitySessionSetChunkStatic(m_session, children[0], 1),
+              NvBlastExtUnitySessionResult_Success);
+
+    // Fracturing an unrelated sibling must not disturb the mark.
+    VoronoiConfiguration voronoi(4);
+    ASSERT_EQ(NvBlastExtUnitySessionFractureVoronoi(m_session, children[1], voronoi, 0),
+              NvBlastExtUnitySessionResult_Success);
+
+    EXPECT_NE(NvBlastExtUnitySessionGetChunkStatic(m_session, children[0]), 0u);
 }
 
 // ─── One-shot API, now running on top of a session ────────────────────────────

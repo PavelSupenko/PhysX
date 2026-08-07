@@ -309,6 +309,53 @@ void NvBlastExtUnitySessionFitAllUvToRect(NvBlastExtUnityFractureSession* sessio
     }
 }
 
+// ─── Support graph ────────────────────────────────────────────────────────────
+
+int32_t NvBlastExtUnitySessionSetChunkStatic(NvBlastExtUnityFractureSession* session, int32_t chunkId,
+                                             NvBlastExtUnityBool isStatic)
+{
+    if (session == nullptr)
+    {
+        return NvBlastExtUnitySessionResult_InvalidSession;
+    }
+
+    return toSession(session)->setChunkStatic(chunkId, isStatic != 0);
+}
+
+NvBlastExtUnityBool NvBlastExtUnitySessionGetChunkStatic(const NvBlastExtUnityFractureSession* session,
+                                                         int32_t chunkId)
+{
+    return session != nullptr && toSession(session)->getChunkStatic(chunkId) ? 1u : 0u;
+}
+
+uint32_t NvBlastExtUnitySessionGetStaticChunkIds(const NvBlastExtUnityFractureSession* session, int32_t* outIds,
+                                                 uint32_t maxIds)
+{
+    return session != nullptr ? toSession(session)->getStaticChunkIds(outIds, maxIds) : 0;
+}
+
+void NvBlastExtUnitySessionClearStaticChunks(NvBlastExtUnityFractureSession* session)
+{
+    if (session != nullptr)
+    {
+        toSession(session)->clearStaticChunks();
+    }
+}
+
+NvBlastExtUnityBool NvBlastExtUnitySessionIsChunkSupport(const NvBlastExtUnityFractureSession* session,
+                                                         int32_t chunkId, int32_t defaultSupportDepth)
+{
+    return session != nullptr && toSession(session)->isChunkSupport(chunkId, defaultSupportDepth) ? 1u : 0u;
+}
+
+void NvBlastExtUnitySessionSetWorldBondDirection(NvBlastExtUnityFractureSession* session, NvcVec3 direction)
+{
+    if (session != nullptr)
+    {
+        toSession(session)->setWorldBondDirection(direction);
+    }
+}
+
 // ─── Finalize ─────────────────────────────────────────────────────────────────
 
 AuthoringResult* NvBlastExtUnitySessionFinalize(NvBlastExtUnityFractureSession* session,

@@ -399,6 +399,63 @@ NV_C_API int32_t NvBlastExtUnitySessionFitUvToRect(NvBlastExtUnityFractureSessio
 */
 NV_C_API void NvBlastExtUnitySessionFitAllUvToRect(NvBlastExtUnityFractureSession* session, float side);
 
+// ─── Support graph ────────────────────────────────────────────────────────────
+//
+// Which chunks are support chunks — the level the simulation treats as breakable — follows the
+// depth rule given to Finalize. What that rule cannot express is anchoring: without a bond to the
+// world, a structure has nothing holding it up and collapses on the first simulated frame.
+//
+// Marking a chunk static gives it that bond. Only support chunks can carry one, so a chunk marked
+// static that the depth rule did not make support is reported and skipped at finalize time —
+// use IsChunkSupport to check before marking.
+
+/**
+    Marks a chunk as anchored to the world, or clears the mark.
+
+    The mark is remembered per chunk ID and survives fracturing elsewhere in the hierarchy; marks on
+    chunks that are later deleted are simply never applied.
+
+    \return NvBlastExtUnitySessionResult_Success, or InvalidChunk if no such chunk exists.
+*/
+NV_C_API int32_t NvBlastExtUnitySessionSetChunkStatic(NvBlastExtUnityFractureSession* session, int32_t chunkId,
+                                                       NvBlastExtUnityBool isStatic);
+
+/**
+    Returns non-zero if the chunk is marked as anchored to the world.
+*/
+NV_C_API NvBlastExtUnityBool NvBlastExtUnitySessionGetChunkStatic(const NvBlastExtUnityFractureSession* session,
+                                                                   int32_t chunkId);
+
+/**
+    Fills the IDs of every chunk marked static. Same two-phase convention as GetChunkIds.
+*/
+NV_C_API uint32_t NvBlastExtUnitySessionGetStaticChunkIds(const NvBlastExtUnityFractureSession* session,
+                                                           int32_t* outIds, uint32_t maxIds);
+
+/**
+    Clears every static mark.
+*/
+NV_C_API void NvBlastExtUnitySessionClearStaticChunks(NvBlastExtUnityFractureSession* session);
+
+/**
+    Reports whether a chunk would be a support chunk under the given depth rule.
+
+    This mirrors what Finalize will decide, so a tool can show the artist which chunks form the
+    support layer — and therefore which ones can be anchored — without finalizing first.
+
+    \param[in] defaultSupportDepth Same value that will be passed to Finalize; -1 makes leaves support.
+    \return Non-zero if the chunk would be a support chunk.
+*/
+NV_C_API NvBlastExtUnityBool NvBlastExtUnitySessionIsChunkSupport(const NvBlastExtUnityFractureSession* session,
+                                                                   int32_t chunkId, int32_t defaultSupportDepth);
+
+/**
+    Sets the direction of the bonds tying static chunks to the world. Defaults to (0, -1, 0), which
+    reads as "held from below" for an object standing on the ground.
+*/
+NV_C_API void NvBlastExtUnitySessionSetWorldBondDirection(NvBlastExtUnityFractureSession* session,
+                                                           NvcVec3 direction);
+
 // ─── Finalize ─────────────────────────────────────────────────────────────────
 
 /**
