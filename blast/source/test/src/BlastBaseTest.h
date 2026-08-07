@@ -51,6 +51,21 @@ public:
         NvBlastGlobalSetErrorCallback(this);
     }
 
+    ~BlastBaseTest() override
+    {
+        // gtest destroys the test object after each test, but the global callback would keep
+        // pointing at it. Any Blast message logged afterwards from outside a test — a library
+        // reporting a problem during a later test's setup, say — then calls into freed memory.
+        // Passing nullptr restores the default stdout callback.
+        //
+        // Only clear it if it is still ours: a nested or subsequently constructed test may have
+        // taken over, and stealing the callback back would break that one instead.
+        if (NvBlastGlobalGetErrorCallback() == this)
+        {
+            NvBlastGlobalSetErrorCallback(nullptr);
+        }
+    }
+
     // A zeroing alloc with the same signature as malloc
     static void* alignedZeroedAlloc(size_t size)
     {

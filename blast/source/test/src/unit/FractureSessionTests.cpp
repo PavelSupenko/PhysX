@@ -690,23 +690,8 @@ TEST_F(FractureSessionTest, StaticMarksSurviveFurtherFracturing)
 }
 
 // ─── Asset serialization ──────────────────────────────────────────────────────
-//
-// These are DISABLED because of an interaction inside ExtSerialization that this work did not
-// introduce and has not resolved. Running them after AssetTest* crashes with EXC_BAD_ACCESS on a
-// jump to a bad address, once a few serialize/deserialize cycles have gone through. Ruled out so
-// far: the codec (capnp and raw fail alike), the serialization manager's lifetime (per-call and
-// process-wide fail alike), the release order of the authoring result, and heap corruption
-// detectable by MallocScribble/MallocGuardEdges. Each suite on its own passes; so does the whole
-// group of these tests on its own.
-//
-// The API itself is exercised and correct in isolation — run them with:
-//   ./UnitTests --gtest_filter='FractureSessionTest.DISABLED_*' --gtest_also_run_disabled_tests
-//
-// Re-enable once the interaction is understood; do not assume serialization is at fault in the
-// editor without reproducing it there first.
 
-
-TEST_F(FractureSessionTest, DISABLED_AssetSurvivesASerializationRoundTrip)
+TEST_F(FractureSessionTest, AssetSurvivesASerializationRoundTrip)
 {
     setCubeSource();
 
@@ -745,7 +730,7 @@ TEST_F(FractureSessionTest, DISABLED_AssetSurvivesASerializationRoundTrip)
     NvBlastExtUnityReleaseSerializedAsset(buffer);
 }
 
-TEST_F(FractureSessionTest, DISABLED_RepeatedSerializationIsStable)
+TEST_F(FractureSessionTest, RepeatedSerializationIsStable)
 {
     setCubeSource();
 
@@ -776,7 +761,7 @@ TEST_F(FractureSessionTest, DISABLED_RepeatedSerializationIsStable)
     NvBlastExtUnityReleaseCollisionBuilder(collisionBuilder);
 }
 
-TEST_F(FractureSessionTest, DISABLED_SerializingNothingIsRefused)
+TEST_F(FractureSessionTest, SerializingNothingIsRefused)
 {
     void* buffer = nullptr;
     EXPECT_EQ(NvBlastExtUnitySerializeAsset(nullptr, &buffer), 0u);
@@ -787,7 +772,7 @@ TEST_F(FractureSessionTest, DISABLED_SerializingNothingIsRefused)
     NvBlastExtUnityReleaseAsset(nullptr);
 }
 
-TEST_F(FractureSessionTest, DISABLED_AnchorsSurviveSerialization)
+TEST_F(FractureSessionTest, AnchorsSurviveSerialization)
 {
     setCubeSource();
 
