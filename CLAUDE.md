@@ -49,6 +49,16 @@ Build logs go to `cmake_configure.log` / `cmake_build.log` inside the build dire
 ./build_artifacts/build/macos-arm64/UnitTests --gtest_filter=ActorTests.*     # single suite
 ```
 
+A green run is **124 passing**. `APITest.SubsupportFracture` reports a `container-overflow` under AddressSanitizer inside `NvBlastFamily::fractureSubSupport` — that predates this project's work and is not a regression.
+
+`BlastBaseTest` registers itself as Blast's global error callback in its constructor and clears it in its destructor. The clear matters: gtest destroys the test object after each test, and without it any Blast message logged from *outside* a live test calls into freed memory. That produced a crash that looked like it lived in serialization and survived changing the codec, the manager's lifetime and the release order — AddressSanitizer is what found it. An ASan build can be configured with:
+
+```bash
+cmake -S . -B build_artifacts/build/macos-arm64-asan -DNV_CONFIGURATION_TYPE=release \
+  -DCMAKE_CXX_FLAGS="-fsanitize=address -fno-omit-frame-pointer -g -O1" \
+  -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address" -DCMAKE_SHARED_LINKER_FLAGS="-fsanitize=address"
+```
+
 `TestProgram` is a hand-edited scratch harness ([blast/source/program/TestProgram.cpp](blast/source/program/TestProgram.cpp)) that fractures a hardcoded cube through the Unity C-API — the fastest way to debug the bridge without launching Unity. Edit `createFracturer()` to select the algorithm under test. VS Code has a `Debug Blast Test Program` lldb launch config pointed at the `macos-arm64` build.
 
 Unity-side tests live in `Packages/com.pavlo-supenko.unity-blaster/Tests/` (NUnit, Editor-only) and run from Unity's Test Runner.
@@ -62,7 +72,7 @@ Each `blast/cmake/NvBlast*.cmake` file defines exactly one shared library; `blas
 The layer being developed is `NvBlastExtUnity` — a flat `extern "C"` surface over Blast's authoring API, plus a matching C# P/Invoke layer.
 
 ```
-Unity Editor (FractureWindow)
+Unity Editor (BlastAuthoringWindow / FractureWindow)
   → FracturingAsset            orchestrates Create → Clear → Fracture → SpawnGameObjects
       → NativeMeshBuilder      Unity Mesh  → native Nv::Blast::Mesh*
       → NvBlastExtUnity.cs     [DllImport("NvBlastExtUnity")]
@@ -88,7 +98,23 @@ Two rules matter when extending it:
 - **Chunks are addressed by chunk ID, never by info index.** IDs are stable; `getChunkInfoIndex` converts at the boundary. Info indices shift whenever chunks are added or removed, so handing one to C# guarantees a stale-reference bug.
 - **Booleans cross the ABI as `NvBlastExtUnityBool` (`uint32_t`).** C++ `bool` is 1 byte and C# `bool` marshals as a 4-byte `BOOL`; the mismatch is silent.
 
-The generator is re-seeded before every operation, so a fracture depends only on its seed and parameters, never on how many operations preceded it. That is what makes a stored seed reproduce an asset.
+The generator is re-seeded before every operation, so a fracture depends only on its seed and parameters, never on how many operations preceded it. That is what makes a stored seed reproduce an asset — and what the authoring recipe on the Unity side is built on.
+
+### Support graph and anchoring
+
+Which chunks are support chunks follows the depth rule passed to Finalize. What that rule cannot express is anchoring: with nothing bonding the asset to the world, a structure has no support and collapses on the first simulated frame.
+
+Chunks can be marked static; Finalize gives each one a bond to the external body via `NvBlastExtAssetUtilsAddExternalBonds`. Marks are held as **chunk IDs** and translated through `assetToFractureChunkIdMap` at finalize time, because finalizing reorders chunks and the asset's indices do not match the session's IDs.
+
+Only support chunks can carry an external bond. A chunk marked static that the depth rule did not make support is reported and skipped — `NvBlastExtUnitySessionIsChunkSupport` mirrors the rule so a tool can check first.
+
+Arbitrary per-chunk support overrides are deliberately absent: changing which chunks are upper-support changes the chunk ordering `NvBlastCreateAsset` requires, so honouring them means duplicating the whole `ProcessFracture` pipeline rather than post-processing its result.
+
+### Asset serialization
+
+The `NvBlastAsset` is freed with its `AuthoringResult`, so without serializing it the entire authoring outcome is discarded moments after being produced. `NvBlastExtUnitySerializeAsset` / `DeserializeAsset` / `ReleaseSerializedAsset` in [NvBlastExtUnity.h](blast/include/extensions/unity/NvBlastExtUnity.h) copy it out; this is what the runtime will load.
+
+The serialization manager is created per process, never released. `NvBlastExtLlSerializerLoadSet` also registers the family codecs, which need the Tk framework this extension does not build — those two fail and log once. That complaint is noise, but it once mattered: it was the message that exposed a use-after-free in the test harness (see below).
 
 ### The `Fracturer` descriptor
 
@@ -101,7 +127,7 @@ Adding a new algorithm means touching, in order:
 2. `FractureSession.h` / `.cpp` — a `fracture<Name>` method plus a `Fracturer::Type` case in `applyFracturer`.
 3. `NvBlastExtUnitySession.h` / `.cpp` — the session entry point; and `NvBlastExtUnity.h` / `.cpp` for a `NvBlastExtUnityCreate<Name>Fracturer` factory if the one-shot path should offer it too.
 4. C# `DllImport`s, a config `struct` under `Runtime/Extensions/Unity/Configs/`, and a `FractureType` enum entry.
-5. `Editor/Windows/FractureWindow.cs` — the settings GUI case.
+5. `Editor/Windows/BlastAuthoringWindow.cs` — the settings GUI case, and a `RecordFractureStep` case so the operation lands in the authoring recipe.
 
 Tests live in [blast/source/test/src/unit/FractureSessionTests.cpp](blast/source/test/src/unit/FractureSessionTests.cpp) and exercise the C API rather than the C++ class, because the C API is the contract engine integrations bind to.
 
@@ -127,7 +153,22 @@ Two details worth keeping in mind when touching it:
 
 Degenerate input — fewer than four points, or points that are collinear or coplanar — has no volume and no hull, so it falls back to a bounding box rather than dropping the chunk's collision.
 
-An earlier `BoundingBoxConvexMeshBuilder` returned a box for *every* chunk; it is gone. The Unity side still uses `MeshCollider` with `convex = true` rather than the generated hulls, so the improvement is not yet visible in-engine — wiring the hulls through is outstanding work.
+An earlier `BoundingBoxConvexMeshBuilder` returned a box for *every* chunk; it is gone. The Unity side reads these hulls through `HullMeshConverter` and turns each into a collider mesh, so a chunk decomposed into several hulls gets one collider per hull instead of a single convex hull of the whole piece.
+
+## The Unity authoring tool
+
+`BlastAuthoringWindow` (Tools → Blast Authoring) drives a session interactively. Three pieces of it are worth knowing before changing anything:
+
+- **Chunks are drawn by hidden proxy objects** (`ChunkPreviewRenderer`), not `Graphics.DrawMesh`. That call submits a mesh for one frame and the Scene View only repaints on interaction, so chunks flickered and vanished; forcing a repaint every tick fixes that but keeps the editor redrawing all day. Proxies carry `HideAndDontSave`, so they never reach the Hierarchy, a saved scene, or the undo stack.
+- **The Scene View is the viewport**, deliberately — it already provides camera, lighting, materials and is the only place overlays can be drawn over the chunks. Picking is analytic (Möller–Trumbore against cached triangles).
+- **Explode is per chunk and compounds down the hierarchy.** Each step is measured against its own parent's centre and radius, so a piece spreads from the piece it was cut from. Picking shifts the ray by the same accumulated offset, or clicks would miss exactly when the view is open.
+
+Two asset types come out of it, in [Runtime/Assets/](../blast-unity/Packages/com.pavlo-supenko.unity-blaster/Runtime/Assets/):
+
+- `BlastFractureAsset` — the build output: serialized Blast asset, chunk meshes, hull meshes, stress defaults.
+- `BlastAuthoringRecipe` — the source: the steps that produced the hierarchy, replayable because fracturing is deterministic in its seed. Stores steps, not geometry, so it stays a few kilobytes and stays meaningful when the algorithms improve.
+
+`BlastAssetExporter` writes them. Two things there are load-bearing: mesh writes are wrapped in `AssetDatabase.StartAssetEditing`/`StopAssetEditing` (without it each `CreateAsset` imports immediately, and a few hundred chunks take minutes that look like a freeze), and mesh paths are fixed rather than unique (`GenerateUniqueAssetPath` left a full extra copy of every mesh on each re-export).
 
 ## Conventions
 
