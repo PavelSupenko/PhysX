@@ -14,6 +14,7 @@ set(NV_BLAST_EXT_UNITY_INCLUDES
     ${PROJECT_SOURCE_DIR}/include/lowlevel
     ${PROJECT_SOURCE_DIR}/include/globals
     ${PROJECT_SOURCE_DIR}/include/extensions/assetutils
+    ${PROJECT_SOURCE_DIR}/include/extensions/serialization
     ${PROJECT_SOURCE_DIR}/source/sdk/common
     # btConvexHullComputer — the quickhull already compiled into NvBlastExtAuthoring as part of
     # V-HACD, which ConvexHullMeshBuilder uses to build real hulls without pulling in PhysX.
@@ -34,6 +35,8 @@ target_link_libraries(NvBlastExtUnity
     NvBlastExtAuthoring
     # NvBlastExtAssetUtilsAddExternalBonds — anchors static chunks to the world at finalize time.
     NvBlastExtAssetUtils
+    # Serializing the authored asset, so the runtime has something to load.
+    NvBlastExtSerialization
 )
 
 target_compile_definitions(NvBlastExtUnity PRIVATE 

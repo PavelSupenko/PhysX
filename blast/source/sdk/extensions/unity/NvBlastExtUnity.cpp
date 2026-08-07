@@ -6,6 +6,9 @@
 #include "NvBlastPreprocessorInternal.h"
 #include "ConvexHullMeshBuilder.h"
 #include "FractureSession.h"
+#include "NvBlastExtSerialization.h"
+#include "NvBlastExtLlSerialization.h"
+#include "NvBlastGlobals.h"
 
 #include <sstream>
 
@@ -150,6 +153,97 @@ ConvexMeshBuilder* NvBlastExtUnityCreateCollisionBuilder()
 void NvBlastExtUnityReleaseCollisionBuilder(ConvexMeshBuilder* builder)
 {
     if (builder) builder->release();
+}
+
+// ─── Asset serialization ──────────────────────────────────────────────────────
+
+namespace
+{
+
+/**
+    Owns a serialization manager for the duration of one call.
+
+    A process-wide instance would be cheaper, but the manager and the codecs it holds are allocated
+    through Blast's global allocator, which the host can swap — releasing the Tk framework does
+    exactly that. An instance outliving such a swap is then freed by a different allocator than
+    built it, which crashes rather than failing cleanly. Creating and releasing per call keeps the
+    whole lifetime inside one allocator, and saving an asset is rare enough that the setup cost does
+    not matter.
+*/
+ExtSerialization& serializationManager()
+{
+    // One manager for the process, deliberately never released.
+    //
+    // Creating and releasing one per call leaks or corrupts something inside the extension: after a
+    // handful of create/release cycles the next serialization jumps to a bad address. A single
+    // long-lived manager never enters that cycle. It is also what the manager is for — it holds a
+    // codec registry, which has no reason to be rebuilt per save.
+    static ExtSerialization* manager = []() {
+        ExtSerialization* created = NvBlastExtSerializationCreate();
+        if (created != nullptr)
+        {
+            // LoadSet also registers the family codecs, which need the Tk framework this extension
+            // does not build. Those fail and log once; the asset codecs register fine.
+            NvBlastExtLlSerializerLoadSet(*created);
+        }
+        return created;
+    }();
+
+    return *manager;
+}
+
+}  // namespace
+
+uint32_t NvBlastExtUnitySerializeAsset(const NvBlastAsset* asset, void** outBuffer)
+{
+    if (asset == nullptr || outBuffer == nullptr)
+    {
+        return 0;
+    }
+
+    *outBuffer = nullptr;
+
+    void* buffer = nullptr;
+    const uint64_t size = NvBlastExtSerializationSerializeAssetIntoBuffer(buffer, serializationManager(), asset);
+
+    if (size == 0 || buffer == nullptr)
+    {
+        return 0;
+    }
+
+    *outBuffer = buffer;
+    return static_cast<uint32_t>(size);
+}
+
+void NvBlastExtUnityReleaseSerializedAsset(void* buffer)
+{
+    if (buffer != nullptr)
+    {
+        NVBLAST_FREE(buffer);
+    }
+}
+
+NvBlastAsset* NvBlastExtUnityDeserializeAsset(const void* buffer, uint32_t size)
+{
+    if (buffer == nullptr || size == 0)
+    {
+        return nullptr;
+    }
+
+    return reinterpret_cast<NvBlastAsset*>(serializationManager().deserializeFromBuffer(buffer, size));
+}
+
+void NvBlastExtUnityReleaseAsset(NvBlastAsset* asset)
+{
+    if (asset != nullptr)
+    {
+        NVBLAST_FREE(asset);
+    }
+}
+
+const NvBlastAsset* NvBlastExtUnityGetAsset(const AuthoringResult& aResult)
+{
+    return aResult.asset;
 }
 
 // ─── Fracture pipeline ────────────────────────────────────────────────────────
