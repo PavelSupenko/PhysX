@@ -2,7 +2,8 @@
 #define FRACTURESESSION_H
 
 #include "NvBlastExtUnitySession.h"
-#include "NvBlastFracturer.h"
+#include "NvBlastExtAuthoringFractureTool.h"
+#include "NvBlastExtUnityConfigs.h"
 #include "SimpleRandomGenerator.h"
 
 #include <unordered_set>
@@ -59,12 +60,6 @@ public:
                         bool replaceChunk);
     int32_t fractureCutout(int32_t chunkId, const NvBlastExtUnityCutoutConfiguration& config, bool replaceChunk);
     int32_t detectIslands(int32_t chunkId, bool createAtNewDepth);
-
-    /**
-        Dispatches a Fracturer descriptor to the matching operation above. This is what lets the
-        one-shot API keep its Fracturer-based signatures while running through a session.
-    */
-    int32_t applyFracturer(int32_t chunkId, const Fracturer& fracturer, bool replaceChunk);
 
     // ─── Queries ──────────────────────────────────────────────────────────────
 

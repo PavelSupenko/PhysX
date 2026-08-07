@@ -5,12 +5,9 @@
 #include "NvBlastExtUnity.h"
 #include "NvBlastPreprocessorInternal.h"
 #include "ConvexHullMeshBuilder.h"
-#include "FractureSession.h"
 #include "NvBlastExtSerialization.h"
 #include "NvBlastExtLlSerialization.h"
 #include "NvBlastGlobals.h"
-
-#include <sstream>
 
 using namespace Nv::Blast;
 
@@ -84,63 +81,6 @@ Mesh* NvBlastExtUnityCleanMesh(Mesh* mesh,
     mesh->release();
 
     return cleanedMesh;
-}
-
-// ─── Fracturers ───────────────────────────────────────────────────────────────
-//
-// A Fracturer is a descriptor: it records which operation to run and with what settings, and the
-// session performs it. See NvBlastFracturer.h.
-
-Fracturer* NvBlastExtUnityCreateVoronoiFracturer(VoronoiConfiguration settings)
-{
-    Fracturer* fracturer = new Fracturer();
-    fracturer->type      = Fracturer::Voronoi;
-    fracturer->voronoi   = settings;
-    return fracturer;
-}
-
-Fracturer* NvBlastExtUnityCreateClusteredVoronoiFracturer(ClusteredVoronoiConfiguration settings)
-{
-    Fracturer* fracturer        = new Fracturer();
-    fracturer->type             = Fracturer::ClusteredVoronoi;
-    fracturer->clusteredVoronoi = settings;
-    return fracturer;
-}
-
-Fracturer* NvBlastExtUnityCreateSlicingFracturer(SlicingConfiguration settings)
-{
-    Fracturer* fracturer = new Fracturer();
-    fracturer->type      = Fracturer::Slicing;
-    fracturer->slicing   = settings;
-    return fracturer;
-}
-
-Fracturer* NvBlastExtUnityCreateIslandsFracturer()
-{
-    Fracturer* fracturer = new Fracturer();
-    fracturer->type      = Fracturer::Islands;
-    return fracturer;
-}
-
-Fracturer* NvBlastExtUnityCreatePlaneCutFracturer(PlaneCutConfiguration settings)
-{
-    Fracturer* fracturer = new Fracturer();
-    fracturer->type      = Fracturer::PlaneCut;
-    fracturer->planeCut  = settings;
-    return fracturer;
-}
-
-Fracturer* NvBlastExtUnityCreateCutOutFracturer(CutOutConfiguration settings)
-{
-    Fracturer* fracturer = new Fracturer();
-    fracturer->type      = Fracturer::CutOut;
-    fracturer->cutOut    = settings;
-    return fracturer;
-}
-
-void NvBlastExtUnityReleaseFracturer(Fracturer* fracturer)
-{
-    delete fracturer;
 }
 
 // ─── Collision builder ────────────────────────────────────────────────────────
@@ -244,67 +184,6 @@ void NvBlastExtUnityReleaseAsset(NvBlastAsset* asset)
 const NvBlastAsset* NvBlastExtUnityGetAsset(const AuthoringResult& aResult)
 {
     return aResult.asset;
-}
-
-// ─── Fracture pipeline ────────────────────────────────────────────────────────
-
-AuthoringResult* NvBlastExtUnityFractureMesh(Mesh* mesh, uint32_t aggregateMaxCount,
-    Fracturer* fracturer, ConvexMeshBuilder* collisionBuilder, NvBlastLog logFn)
-{
-    Mesh* meshes[] = { mesh };
-    int32_t ids[]  = { 0 };
-    return NvBlastExtUnityFractureMeshes(meshes, 1, ids, aggregateMaxCount, fracturer, collisionBuilder, logFn);
-}
-
-AuthoringResult* NvBlastExtUnityFractureMeshes(Mesh** meshes, uint32_t meshesSize, const int32_t* ids,
-    uint32_t aggregateMaxCount, Fracturer* fracturer, ConvexMeshBuilder* collisionBuilder, NvBlastLog logFn)
-{
-    // This is the one-shot convenience path: it drives a throwaway session so both APIs share one
-    // implementation. Callers that need to keep fracturing — subdividing chunks, undoing, previewing
-    // — should own a session directly, see NvBlastExtUnitySession.h.
-    if (fracturer == nullptr)
-    {
-        NVBLASTLL_LOG_ERROR(logFn, "Fracture: no fracturer supplied");
-        return nullptr;
-    }
-
-    {
-        std::ostringstream oss;
-        oss << "Fracturing " << meshesSize << " mesh(es)...";
-        NVBLASTLL_LOG_DEBUG(logFn, oss.str().c_str());
-    }
-
-    FractureSession session(logFn);
-    if (!session.isValid())
-    {
-        return nullptr;
-    }
-
-    if (session.setSourceMeshes(meshes, meshesSize, ids) != NvBlastExtUnitySessionResult_Success)
-    {
-        return nullptr;
-    }
-    NVBLASTLL_LOG_DEBUG(logFn, "Source meshes assigned to the session");
-
-    for (uint32_t i = 0; i < meshesSize; ++i)
-    {
-        // Each source mesh became a root chunk under its own ID; fracture each one in turn.
-        const int32_t chunkId = ids != nullptr ? ids[i] : static_cast<int32_t>(i);
-
-        if (session.applyFracturer(chunkId, *fracturer, false) != NvBlastExtUnitySessionResult_Success)
-        {
-            std::ostringstream oss;
-            oss << "Fracture: failed on chunk " << chunkId;
-            NVBLASTLL_LOG_ERROR(logFn, oss.str().c_str());
-            return nullptr;
-        }
-    }
-
-    NVBLASTLL_LOG_DEBUG(logFn, "Finalizing...");
-    AuthoringResult* result = session.finalize(collisionBuilder, aggregateMaxCount, -1);
-
-    NVBLASTLL_LOG_DEBUG(logFn, "Fracture complete");
-    return result;
 }
 
 // ─── Authoring result helpers ─────────────────────────────────────────────────

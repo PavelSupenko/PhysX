@@ -442,58 +442,6 @@ int32_t FractureSession::detectIslands(int32_t chunkId, bool createAtNewDepth)
     return mTool->islandDetectionAndRemoving(chunkId, createAtNewDepth);
 }
 
-int32_t FractureSession::applyFracturer(int32_t chunkId, const Fracturer& fracturer, bool replaceChunk)
-{
-    switch (fracturer.type)
-    {
-    case Fracturer::Voronoi:
-        return fractureVoronoi(chunkId, fracturer.voronoi, replaceChunk);
-
-    case Fracturer::ClusteredVoronoi:
-        return fractureClusteredVoronoi(chunkId, fracturer.clusteredVoronoi, replaceChunk);
-
-    case Fracturer::Slicing:
-        return fractureSlicing(chunkId, fracturer.slicing, replaceChunk);
-
-    case Fracturer::PlaneCut:
-    {
-        // The legacy PlaneCutConfiguration carries no noise settings, so the cut is flat. The
-        // session API takes noise explicitly for callers that want a rough surface.
-        const NoiseConfiguration noise;
-        return fractureCut(chunkId, fracturer.planeCut.normal, fracturer.planeCut.point, noise, replaceChunk);
-    }
-
-    case Fracturer::CutOut:
-    {
-        NvBlastExtUnityCutoutConfiguration config;
-        config.point               = fracturer.cutOut.point;
-        config.normal              = fracturer.cutOut.normal;
-        config.bitmap              = fracturer.cutOut.bitmap;
-        config.width               = fracturer.cutOut.width;
-        config.height              = fracturer.cutOut.height;
-        config.scale               = { -1.0f, -1.0f };  // Fit the pattern to the chunk bounds
-        config.aperture            = 0.0f;
-        config.isRelativeTransform = 1;
-        config.useSmoothing        = 0;
-        // Segmentation defaults carried over from the original one-shot implementation.
-        config.segmentationErrorThreshold = 0.001f;
-        config.snapThreshold              = 1.0f;
-        config.periodic                   = 0;
-        config.expandGaps                 = 1;
-        return fractureCutout(chunkId, config, replaceChunk);
-    }
-
-    case Fracturer::Islands:
-    {
-        const int32_t islandCount = detectIslands(chunkId, true);
-        return islandCount < 0 ? islandCount : NvBlastExtUnitySessionResult_Success;
-    }
-    }
-
-    NVBLASTLL_LOG_ERROR(mLogFn, "Fracture: unknown fracturer type");
-    return NvBlastExtUnitySessionResult_InvalidArgument;
-}
-
 // ─── Queries ──────────────────────────────────────────────────────────────────
 
 uint32_t FractureSession::getChunkCount() const

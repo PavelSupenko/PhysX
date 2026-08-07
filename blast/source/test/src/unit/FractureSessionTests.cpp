@@ -809,23 +809,4 @@ TEST_F(FractureSessionTest, AnchorsSurviveSerialization)
     NvBlastExtUnityReleaseSerializedAsset(buffer);
 }
 
-// ─── One-shot API, now running on top of a session ────────────────────────────
-
-TEST_F(FractureSessionTest, OneShotFractureStillWorks)
-{
-    VoronoiConfiguration voronoi(5);
-    Fracturer*           fracturer = NvBlastExtUnityCreateVoronoiFracturer(voronoi);
-    ASSERT_NE(fracturer, nullptr);
-
-    ConvexMeshBuilder* collisionBuilder = NvBlastExtUnityCreateCollisionBuilder();
-    AuthoringResult*   result = NvBlastExtUnityFractureMesh(m_mesh, 1, fracturer, collisionBuilder, silentLog);
-
-    ASSERT_NE(result, nullptr);
-    EXPECT_GT(result->chunkCount, 1u);
-
-    NvBlastExtUnityReleaseAuthoringResult(*collisionBuilder, result);
-    NvBlastExtUnityReleaseCollisionBuilder(collisionBuilder);
-    NvBlastExtUnityReleaseFracturer(fracturer);
-}
-
 }  // namespace

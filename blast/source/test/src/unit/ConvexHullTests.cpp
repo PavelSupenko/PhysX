@@ -4,6 +4,7 @@
 // pipeline and the engine integrations actually call.
 
 #include "NvBlastExtUnity.h"
+#include "NvBlastExtUnitySession.h"
 #include "NvBlastExtAuthoringConvexMeshBuilder.h"
 
 #include <gtest/gtest.h>
@@ -266,12 +267,19 @@ TEST_F(ConvexHullTest, FracturedChunksGetHullsThatAreNotAllBoxes)
     Mesh* mesh = NvBlastExtUnityCreateMesh(positions, normals, uvs, verticesCount, indices, 36);
     ASSERT_NE(mesh, nullptr);
 
+    NvBlastExtUnityFractureSession* session = NvBlastExtUnitySessionCreate(nullptr);
+    ASSERT_NE(session, nullptr);
+
+    const int32_t rootId = 0;
+    ASSERT_EQ(NvBlastExtUnitySessionSetSourceMeshes(session, &mesh, 1, &rootId),
+              NvBlastExtUnitySessionResult_Success);
+
     VoronoiConfiguration config(8);
-    Fracturer* fracturer = NvBlastExtUnityCreateVoronoiFracturer(config);
-    ASSERT_NE(fracturer, nullptr);
+    ASSERT_EQ(NvBlastExtUnitySessionFractureVoronoi(session, rootId, config, 0),
+              NvBlastExtUnitySessionResult_Success);
 
     ConvexMeshBuilder* builder = NvBlastExtUnityCreateCollisionBuilder();
-    AuthoringResult*   result  = NvBlastExtUnityFractureMesh(mesh, 1, fracturer, builder, nullptr);
+    AuthoringResult*   result  = NvBlastExtUnitySessionFinalize(session, builder, 1, -1);
 
     ASSERT_NE(result, nullptr);
     ASSERT_GT(result->chunkCount, 1u);
@@ -300,7 +308,7 @@ TEST_F(ConvexHullTest, FracturedChunksGetHullsThatAreNotAllBoxes)
 
     NvBlastExtUnityReleaseAuthoringResult(*builder, result);
     NvBlastExtUnityReleaseCollisionBuilder(builder);
-    NvBlastExtUnityReleaseFracturer(fracturer);
+    NvBlastExtUnitySessionRelease(session);
     NvBlastExtUnityReleaseMesh(mesh);
 }
 

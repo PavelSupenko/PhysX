@@ -1,10 +1,14 @@
+// Scratch harness for driving the Unity bridge without launching an editor: it builds a hardcoded
+// cube, fractures it through the session C-API and reports the chunk count. Edit fracture() to
+// select the operation under test.
+
 #include <iostream>
 #include <NvBlastExtUnity.h>
+#include <NvBlastExtUnitySession.h>
 #include <NvBlastExtUnityConfigs.h>
-#include <NvBlastFracturer.h>
 
 Mesh* createMesh();
-Fracturer* createFracturer();
+int32_t fracture(NvBlastExtUnityFractureSession* session, int32_t chunkId);
 void log(int type, const char* msg, const char* file, int line);
 
 int main()
@@ -12,49 +16,82 @@ int main()
     log(0, "Creating mesh...", __FILE__, __LINE__);
     Mesh* mesh = createMesh();
 
-    log(0, "Creating fracturer...", __FILE__, __LINE__);
-    Fracturer* fracturer = createFracturer();
+    log(0, "Creating session...", __FILE__, __LINE__);
+    NvBlastExtUnityFractureSession* session = NvBlastExtUnitySessionCreate(log);
+
+    const int32_t rootId = 0;
+    if (NvBlastExtUnitySessionSetSourceMeshes(session, &mesh, 1, &rootId) != NvBlastExtUnitySessionResult_Success)
+    {
+        log(0, "Failed to set the source mesh", __FILE__, __LINE__);
+        return 1;
+    }
 
     log(0, "Fracturing...", __FILE__, __LINE__);
+    if (fracture(session, rootId) != NvBlastExtUnitySessionResult_Success)
+    {
+        log(0, "Fracture failed", __FILE__, __LINE__);
+        return 1;
+    }
+
+    log(0, "Finalizing...", __FILE__, __LINE__);
     ConvexMeshBuilder* collisionBuilder = NvBlastExtUnityCreateCollisionBuilder();
-    AuthoringResult* result = NvBlastExtUnityFractureMesh(mesh, 1, fracturer, collisionBuilder, log);
+    AuthoringResult*   result           = NvBlastExtUnitySessionFinalize(session, collisionBuilder, 1, -1);
 
-    log(0, "Fracturing completed", __FILE__, __LINE__);
+    if (result == nullptr)
+    {
+        log(0, "Finalize failed", __FILE__, __LINE__);
+        return 1;
+    }
 
-    int resultChunksCOunt = result->chunkCount;
-    printf("Result chunks count: %d\n", resultChunksCOunt);
+    printf("Result chunks count: %d\n", result->chunkCount);
+
+    NvBlastExtUnityReleaseAuthoringResult(*collisionBuilder, result);
+    NvBlastExtUnityReleaseCollisionBuilder(collisionBuilder);
+    NvBlastExtUnitySessionRelease(session);
+    NvBlastExtUnityReleaseMesh(mesh);
 
     return 0;
 }
 
-Fracturer* createFracturer()
+// Swap the body for whichever operation is being debugged.
+int32_t fracture(NvBlastExtUnityFractureSession* session, int32_t chunkId)
 {
     // VoronoiConfiguration voronoiConfig(5);
-    // return NvBlastExtUnityCreateVoronoiFracturer(voronoiConfig);
+    // return NvBlastExtUnitySessionFractureVoronoi(session, chunkId, voronoiConfig, 0);
 
-    uint32_t width = 5;
-    uint32_t height = 5;
-    uint32_t bytesCount = width * height * 3;
+    const uint32_t width      = 5;
+    const uint32_t height     = 5;
+    const uint32_t bytesCount = width * height * 3;
+
     uint8_t* bitmap = new uint8_t[bytesCount];
     for (uint32_t i = 0; i < width; i++)
     for (uint32_t j = 0; j < height; j++)
     {
-        if (i == 2 || j == 2)
-        {
-            bitmap[(i * width + j) * 3] = 255;
-            bitmap[(i * width + j) * 3 + 1] = 255;
-            bitmap[(i * width + j) * 3 + 2] = 255;
-        }
-        else
-        {
-            bitmap[(i * width + j) * 3] = 0;
-            bitmap[(i * width + j) * 3 + 1] = 0;
-            bitmap[(i * width + j) * 3 + 2] = 0;
-        }
+        const uint8_t value = (i == 2 || j == 2) ? 255 : 0;
+        bitmap[(i * width + j) * 3]     = value;
+        bitmap[(i * width + j) * 3 + 1] = value;
+        bitmap[(i * width + j) * 3 + 2] = value;
     }
 
-    CutOutConfiguration cutOutConfig({0, 0, 0}, {1, 0, 0}, bitmap, width, height);
-    return NvBlastExtUnityCreateCutOutFracturer(cutOutConfig);
+    NvBlastExtUnityCutoutConfiguration config;
+    config.point                      = { 0, 0, 0 };
+    config.normal                     = { 1, 0, 0 };
+    config.bitmap                     = bitmap;
+    config.width                      = width;
+    config.height                     = height;
+    config.scale                      = { -1.0f, -1.0f };  // Fit the pattern to the chunk bounds
+    config.aperture                   = 0.0f;
+    config.isRelativeTransform        = 1;
+    config.useSmoothing               = 0;
+    config.segmentationErrorThreshold = 0.001f;
+    config.snapThreshold              = 1.0f;
+    config.periodic                   = 0;
+    config.expandGaps                 = 1;
+    config.noise                      = NoiseConfiguration();
+
+    const int32_t result = NvBlastExtUnitySessionFractureCutout(session, chunkId, &config, 0);
+    delete[] bitmap;
+    return result;
 }
 
 Mesh* createMesh()

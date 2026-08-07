@@ -1,6 +1,10 @@
 //! @file
 //!
 //! @brief Defines the API for the NvBlastExtUnity blast sdk extension's for Unity
+//!
+//! Mesh construction, collision-builder lifetime and asset serialization live here — the pieces an
+//! integration needs on either side of an authoring session. Fracturing itself is the session's
+//! job; see NvBlastExtUnitySession.h.
 
 #ifndef NVBLASTEXTUNITY_H
 #define NVBLASTEXTUNITY_H
@@ -8,7 +12,6 @@
 #include "NvBlastGlobals.h"
 #include "NvBlastExtAuthoring.h"
 #include "NvBlastExtAuthoringMesh.h"
-#include "NvBlastFracturer.h"
 #include "NvBlastExtUnityConfigs.h"
 
 using namespace Nv::Blast;
@@ -29,16 +32,6 @@ NV_C_API const Facet* NvBlastExtUnityGetFacets(const Mesh* mesh);
 
 NV_C_API uint32_t NvBlastExtUnityGetEdgesCount(const Mesh* mesh);
 NV_C_API const Edge* NvBlastExtUnityGetEdges(const Mesh* mesh);
-
-// Fracture operations
-NV_C_API Fracturer* NvBlastExtUnityCreateIslandsFracturer();
-NV_C_API Fracturer* NvBlastExtUnityCreateVoronoiFracturer(VoronoiConfiguration settings);
-NV_C_API Fracturer* NvBlastExtUnityCreateClusteredVoronoiFracturer(ClusteredVoronoiConfiguration settings);
-NV_C_API Fracturer* NvBlastExtUnityCreateSlicingFracturer(SlicingConfiguration settings);
-NV_C_API Fracturer* NvBlastExtUnityCreatePlaneCutFracturer(PlaneCutConfiguration settings);
-NV_C_API Fracturer* NvBlastExtUnityCreateCutOutFracturer(CutOutConfiguration settings);
-
-NV_C_API void NvBlastExtUnityReleaseFracturer(Fracturer* fracturer);
 
 NV_C_API void NvBlastExtUnityReleaseAuthoringResult(ConvexMeshBuilder& collisionBuilder, AuthoringResult* ar);
 NV_C_API ConvexMeshBuilder* NvBlastExtUnityCreateCollisionBuilder();
@@ -80,11 +73,9 @@ NV_C_API void NvBlastExtUnityReleaseAsset(NvBlastAsset* asset);
 */
 NV_C_API const NvBlastAsset* NvBlastExtUnityGetAsset(const AuthoringResult& aResult);
 
-NV_C_API AuthoringResult* NvBlastExtUnityFractureMesh(Mesh *mesh, uint32_t aggregateMaxCount, Fracturer* fracturer, ConvexMeshBuilder* collisionBuilder, NvBlastLog logFn);
-NV_C_API AuthoringResult* NvBlastExtUnityFractureMeshes(Mesh **meshes, uint32_t meshesSize, const int32_t *ids, uint32_t aggregateMaxCount, Fracturer* fracturer, ConvexMeshBuilder* collisionBuilder, NvBlastLog logFn);
+// Authoring result inspection
 NV_C_API uint32_t NvBlastExtUnityGetFractureChunksCount(const AuthoringResult& aResult);
 NV_C_API Mesh** NvBlastExtUnityCreateMeshes(const AuthoringResult& aResult);
 NV_C_API void NvBlastExtUnityReleaseMeshesArray(Mesh** meshes);
-NV_C_API void NvBlastExtUnityReleaseMesh(Mesh* mesh);
 
 #endif // ifndef NVBLASTEXTUNITY_H

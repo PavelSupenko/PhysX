@@ -30,34 +30,8 @@ struct ClusteredVoronoiConfiguration
     }
 };
 
-struct PlaneCutConfiguration
-{
-    NvcVec3 point;
-    NvcVec3 normal;
-
-    PlaneCutConfiguration(NvcVec3 point = {0, 0, 0}, NvcVec3 normal = {1, 0, 0})
-    {
-        this->point = point;
-        this->normal = normal;
-    }
-};
-
-struct CutOutConfiguration
-{
-    NvcVec3 point;
-    NvcVec3 normal;
-    uint8_t* bitmap;
-    uint32_t width;
-    uint32_t height;
-
-    CutOutConfiguration(NvcVec3 point = {0, 0, 0}, NvcVec3 normal = {1, 0, 0}, uint8_t* bitmap = nullptr, uint32_t width = 0, uint32_t height = 0)
-    {
-        this->point = point;
-        this->normal = normal;
-        this->bitmap = bitmap;
-        this->width = width;
-        this->height = height;
-    }
-};
+// Plane cut and cutout take their parameters from the session API rather than from a struct here:
+// both need noise settings, and cutout needs the full placement set, which the flat
+// NvBlastExtUnityCutoutConfiguration in NvBlastExtUnitySession.h carries.
 
 #endif
