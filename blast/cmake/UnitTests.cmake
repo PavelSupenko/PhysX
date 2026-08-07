@@ -24,6 +24,7 @@ set(TESTS_SOURCE
     ${PROJECT_SOURCE_DIR}/source/test/src/unit/AssetTests.cpp
     ${PROJECT_SOURCE_DIR}/source/test/src/unit/CoreTests.cpp
     ${PROJECT_SOURCE_DIR}/source/test/src/unit/FamilyGraphTests.cpp
+    ${PROJECT_SOURCE_DIR}/source/test/src/unit/FractureSessionTests.cpp
     ${PROJECT_SOURCE_DIR}/source/test/src/unit/MultithreadingTests.cpp
     ${PROJECT_SOURCE_DIR}/source/test/src/unit/TkCompositeTests.cpp
     ${PROJECT_SOURCE_DIR}/source/test/src/unit/TkTests.cpp
@@ -38,6 +39,9 @@ set(TESTS_INCLUDES
     ${PROJECT_SOURCE_DIR}/include/extensions/assetutils
     ${PROJECT_SOURCE_DIR}/include/extensions/shaders
     ${PROJECT_SOURCE_DIR}/include/extensions/serialization
+    ${PROJECT_SOURCE_DIR}/include/extensions/authoring
+    ${PROJECT_SOURCE_DIR}/include/extensions/authoringCommon
+    ${PROJECT_SOURCE_DIR}/include/extensions/unity
     ${PROJECT_SOURCE_DIR}/source/sdk/common
     ${PROJECT_SOURCE_DIR}/source/sdk/globals
     ${PROJECT_SOURCE_DIR}/source/sdk/lowlevel
@@ -69,6 +73,8 @@ target_link_libraries(UnitTests
     NvBlastExtShaders
     NvBlastExtSerialization
     NvBlastExtTkSerialization
+    NvBlastExtAuthoring
+    NvBlastExtUnity
 
     GTest::gtest_main
 )

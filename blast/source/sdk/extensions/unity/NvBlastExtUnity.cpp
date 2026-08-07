@@ -2,17 +2,10 @@
 #include "NvBlastExtAuthoringFractureTool.h"
 #include "NvBlastExtAuthoringBondGenerator.h"
 #include "NvBlastExtAuthoring.h"
-#include "SimpleRandomGenerator.h"
 #include "NvBlastExtUnity.h"
 #include "NvBlastPreprocessorInternal.h"
 #include "BoundingBoxConvexMeshBuilder.h"
-
-#include "VoronoiFracturer.h"
-#include "IslandsFracturer.h"
-#include "ClusteredVoronoiFracturer.h"
-#include "SlicingFracturer.h"
-#include "PlaneCutFracturer.h"
-#include "CutOutFracturer.h"
+#include "FractureSession.h"
 
 #include <sstream>
 
@@ -91,35 +84,55 @@ Mesh* NvBlastExtUnityCleanMesh(Mesh* mesh,
 }
 
 // ─── Fracturers ───────────────────────────────────────────────────────────────
+//
+// A Fracturer is a descriptor: it records which operation to run and with what settings, and the
+// session performs it. See NvBlastFracturer.h.
 
 Fracturer* NvBlastExtUnityCreateVoronoiFracturer(VoronoiConfiguration settings)
 {
-    return new VoronoiFracturer(settings);
+    Fracturer* fracturer = new Fracturer();
+    fracturer->type      = Fracturer::Voronoi;
+    fracturer->voronoi   = settings;
+    return fracturer;
 }
 
 Fracturer* NvBlastExtUnityCreateClusteredVoronoiFracturer(ClusteredVoronoiConfiguration settings)
 {
-    return new ClusteredVoronoiFracturer(settings);
+    Fracturer* fracturer        = new Fracturer();
+    fracturer->type             = Fracturer::ClusteredVoronoi;
+    fracturer->clusteredVoronoi = settings;
+    return fracturer;
 }
 
 Fracturer* NvBlastExtUnityCreateSlicingFracturer(SlicingConfiguration settings)
 {
-    return new SlicingFracturer(settings);
+    Fracturer* fracturer = new Fracturer();
+    fracturer->type      = Fracturer::Slicing;
+    fracturer->slicing   = settings;
+    return fracturer;
 }
 
 Fracturer* NvBlastExtUnityCreateIslandsFracturer()
 {
-    return new IslandsFracturer();
+    Fracturer* fracturer = new Fracturer();
+    fracturer->type      = Fracturer::Islands;
+    return fracturer;
 }
 
 Fracturer* NvBlastExtUnityCreatePlaneCutFracturer(PlaneCutConfiguration settings)
 {
-    return new PlaneCutFracturer(settings);
+    Fracturer* fracturer = new Fracturer();
+    fracturer->type      = Fracturer::PlaneCut;
+    fracturer->planeCut  = settings;
+    return fracturer;
 }
 
 Fracturer* NvBlastExtUnityCreateCutOutFracturer(CutOutConfiguration settings)
 {
-    return new CutOutFracturer(settings);
+    Fracturer* fracturer = new Fracturer();
+    fracturer->type      = Fracturer::CutOut;
+    fracturer->cutOut    = settings;
+    return fracturer;
 }
 
 void NvBlastExtUnityReleaseFracturer(Fracturer* fracturer)
@@ -152,65 +165,49 @@ AuthoringResult* NvBlastExtUnityFractureMesh(Mesh* mesh, uint32_t aggregateMaxCo
 AuthoringResult* NvBlastExtUnityFractureMeshes(Mesh** meshes, uint32_t meshesSize, const int32_t* ids,
     uint32_t aggregateMaxCount, Fracturer* fracturer, ConvexMeshBuilder* collisionBuilder, NvBlastLog logFn)
 {
+    // This is the one-shot convenience path: it drives a throwaway session so both APIs share one
+    // implementation. Callers that need to keep fracturing — subdividing chunks, undoing, previewing
+    // — should own a session directly, see NvBlastExtUnitySession.h.
+    if (fracturer == nullptr)
+    {
+        NVBLASTLL_LOG_ERROR(logFn, "Fracture: no fracturer supplied");
+        return nullptr;
+    }
+
     {
         std::ostringstream oss;
         oss << "Fracturing " << meshesSize << " mesh(es)...";
         NVBLASTLL_LOG_DEBUG(logFn, oss.str().c_str());
     }
 
-    FractureTool*       fTool         = NvBlastExtAuthoringCreateFractureTool();
-    BlastBondGenerator* bondGenerator = NvBlastExtAuthoringCreateBondGenerator(collisionBuilder);
+    FractureSession session(logFn);
+    if (!session.isValid())
+    {
+        return nullptr;
+    }
 
-    ConvexDecompositionParams collisionParams;
-    collisionParams.maximumNumberOfHulls = aggregateMaxCount > 0 ? aggregateMaxCount : 1;
-    collisionParams.voxelGridResolution  = 0;
-
-    SimpleRandomGenerator rng;
-    rng.seed(0);
-
-    fTool->setSourceMeshes(meshes, meshesSize, ids);
-    NVBLASTLL_LOG_DEBUG(logFn, "Source meshes assigned to FractureTool");
+    if (session.setSourceMeshes(meshes, meshesSize, ids) != NvBlastExtUnitySessionResult_Success)
+    {
+        return nullptr;
+    }
+    NVBLASTLL_LOG_DEBUG(logFn, "Source meshes assigned to the session");
 
     for (uint32_t i = 0; i < meshesSize; ++i)
     {
-        Mesh*    mesh = meshes[i];
-        int32_t  id   = ids[i];
+        // Each source mesh became a root chunk under its own ID; fracture each one in turn.
+        const int32_t chunkId = ids != nullptr ? ids[i] : static_cast<int32_t>(i);
 
-        if (mesh == nullptr)
+        if (session.applyFracturer(chunkId, *fracturer, false) != NvBlastExtUnitySessionResult_Success)
         {
             std::ostringstream oss;
-            oss << "Mesh with id " << id << " is null — skipping";
+            oss << "Fracture: failed on chunk " << chunkId;
             NVBLASTLL_LOG_ERROR(logFn, oss.str().c_str());
-            continue;
-        }
-
-        VoronoiSitesGenerator* sitesGen = NvBlastExtAuthoringCreateVoronoiSitesGenerator(mesh, &rng);
-        if (sitesGen == nullptr)
-        {
-            NVBLASTLL_LOG_ERROR(logFn, "Failed to create VoronoiSitesGenerator");
-            bondGenerator->release();
-            fTool->release();
             return nullptr;
         }
-
-        if (!fracturer->fracture(fTool, sitesGen, &rng, id, logFn))
-        {
-            NVBLASTLL_LOG_ERROR(logFn, "fracturer->fracture() failed");
-            sitesGen->release();
-            bondGenerator->release();
-            fTool->release();
-            return nullptr;
-        }
-
-        sitesGen->release();
     }
 
-    NVBLASTLL_LOG_DEBUG(logFn, "Running NvBlastExtAuthoringProcessFracture...");
-    AuthoringResult* result = NvBlastExtAuthoringProcessFracture(
-        *fTool, *bondGenerator, *collisionBuilder, collisionParams);
-
-    bondGenerator->release();
-    fTool->release();
+    NVBLASTLL_LOG_DEBUG(logFn, "Finalizing...");
+    AuthoringResult* result = session.finalize(collisionBuilder, aggregateMaxCount, -1);
 
     NVBLASTLL_LOG_DEBUG(logFn, "Fracture complete");
     return result;

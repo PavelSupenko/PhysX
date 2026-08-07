@@ -19,6 +19,7 @@ NV_C_API void NvBlastExtUnityReleaseMesh(Mesh* mesh);
 NV_C_API Mesh* NvBlastExtUnityCleanMesh(Mesh* mesh, NvBlastLog logFn, NvBlastLogProgress logPrgrsFn, NvBlastLogProgressStart logPrgrsStartFn, NvBlastLogProgressEnd logPrgrsEndFn);
 
 NV_C_API void NvBlastExtUnitySetMaterialId(Mesh* mesh, const int32_t *materialIds);
+NV_C_API void NvBlastExtUnitySetSmoothingGroup(Mesh* mesh, const int32_t *smoothingGroups);
 
 NV_C_API uint32_t NvBlastExtUnityGetVerticesCount(const Mesh* mesh);
 NV_C_API const Vertex* NvBlastExtUnityGetVertices(const Mesh* mesh);

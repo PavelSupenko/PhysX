@@ -1,6 +1,8 @@
 set(NV_BLAST_EXT_UNITY_SOURCE
     ${COMMON_SOURCES}
     ${PROJECT_SOURCE_DIR}/source/sdk/extensions/unity/NvBlastExtUnity.cpp
+    ${PROJECT_SOURCE_DIR}/source/sdk/extensions/unity/NvBlastExtUnitySession.cpp
+    ${PROJECT_SOURCE_DIR}/source/sdk/extensions/unity/FractureSession.cpp
 )
 
 set(NV_BLAST_EXT_UNITY_INCLUDES
@@ -12,7 +14,6 @@ set(NV_BLAST_EXT_UNITY_INCLUDES
     ${PROJECT_SOURCE_DIR}/include/globals
     ${PROJECT_SOURCE_DIR}/include/extensions/assetutils
     ${PROJECT_SOURCE_DIR}/source/sdk/common
-    ${PROJECT_SOURCE_DIR}/dependencies/shared/BoostMultiprecision
 )
 
 add_library(NvBlastExtUnity ${LIBRARIES_TYPE}
